@@ -34,10 +34,7 @@ jobs:
           zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
 
       - name: Package Artifacts
-        run: |
-          mkdir -p artifacts
-          cp -r zig-out/bin artifacts/
-          zip -r ${{ matrix.target }}-artifact.zip artifacts/
+        run: zip -r ${{ matrix.target }}-artifact.zip zig-out/bin
 
       - name: Upload Artifacts (Optional)
         uses: actions/upload-artifact@v4
