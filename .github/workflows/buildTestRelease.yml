@@ -104,4 +104,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release_macos_aarch64
-          path: ./aarch64-macos-artifacts/
+          path: ./aarch64-macos-artifacts
