@@ -2,6 +2,10 @@
     .name = "escape-the-darkness",
     .version = "0.0.0",
     .dependencies = .{
+        .system_sdk = .{
+            .url = "https://github.com/zig-gamedev/system_sdk/archive/d1e724748d15cfcbf50c45ec7c7019688d45b16a.tar.gz",
+            .hash = "122047a9298c4c9dd43389d418d6826d469b192246ba0944102964cdc57f94c562df",
+        },
         .zglfw = .{
             .url = "https://github.com/zig-gamedev/zglfw/archive/e9bd486903b5904b6d4e27b8b3771b138a667ef1.tar.gz",
             .hash = "12209fb981e7aab58c2f9062ab526bd43df3d7953aa41e131a173c37ad35d10b1132",
