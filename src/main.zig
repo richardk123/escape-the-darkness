@@ -6,35 +6,12 @@ const wgpu = zgpu.wgpu;
 const zgui = @import("zgui");
 const zm = @import("zmath");
 
+// Shaders
+const vs_shader = @embedFile("shader/vs.wgsl");
+const fs_shader = @embedFile("shader/fs.wgsl");
+
 const content_dir = @import("build_options").content_dir;
 const window_title = "Escape the darkness";
-
-// zig fmt: off
-const wgsl_vs =
-\\  @group(0) @binding(0) var<uniform> object_to_clip: mat4x4<f32>;
-\\  struct VertexOut {
-\\      @builtin(position) position_clip: vec4<f32>,
-\\      @location(0) color: vec3<f32>,
-\\  }
-\\
-\\  @vertex fn main(
-\\      @location(0) position: vec3<f32>,
-\\      @location(1) color: vec3<f32>,
-\\  ) -> VertexOut {
-\\      var output: VertexOut;
-\\      output.position_clip = vec4(position, 1.0) * object_to_clip;
-\\      output.color = color;
-\\      return output;
-\\  }
-;
-const wgsl_fs =
-\\  @fragment fn main(
-\\      @location(0) color: vec3<f32>,
-\\  ) -> @location(0) vec4<f32> {
-\\      return vec4(color, 1.0);
-\\  }
-// zig fmt: on
-;
 
 const Vertex = struct {
     position: [3]f32,
@@ -82,10 +59,10 @@ fn init(allocator: std.mem.Allocator, window: *zglfw.Window) !DemoState {
     defer gctx.releaseResource(pipeline_layout);
 
     const pipeline = pipeline: {
-        const vs_module = zgpu.createWgslShaderModule(gctx.device, wgsl_vs, "vs");
+        const vs_module = zgpu.createWgslShaderModule(gctx.device, vs_shader, "vs");
         defer vs_module.release();
 
-        const fs_module = zgpu.createWgslShaderModule(gctx.device, wgsl_fs, "fs");
+        const fs_module = zgpu.createWgslShaderModule(gctx.device, fs_shader, "fs");
         defer fs_module.release();
 
         const color_targets = [_]wgpu.ColorTargetState{.{
