@@ -1,0 +1,97 @@
+name: Zig CI
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the 'main' branch (or change to your main branch name)
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest # Use Ubuntu as the base runner
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        target: [x86_64-linux, x86_64-windows, x86_64-macos]
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Zig
+        uses: zigtools/setup-zig@v1.2.1
+        with:
+          mirror: 'https://pkg.machengine.org/zig'
+          version: 0.14.0-dev.2577+271452d22
+
+      - name: Build and Test
+        run: |
+          export ZIG_TARGET="${{ matrix.target }}"
+          zig build test --verbose  #Added verbose to show build progress
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
+          else
+            zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
+          fi
+
+      - name: Archive Artifacts (Optional)
+        uses: actions/upload-artifact@v3
+        if: always() #Always upload artifacts even if build failed
+        with:
+          name: ${{ matrix.os }}-artifacts
+          path: zig-out/bin/
+
+  #Optional job to upload releases to github
+  release:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetch all history for tag information
+          
+      - name: Setup GitHub CLI
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'v' + process.env.GITHUB_SHA.substr(0,7),  # Creates a release for each commit, adjust accordingly
+              name: 'Release for commit ' + process.env.GITHUB_SHA.substr(0,7),
+              body: 'Release created by github action',
+              prerelease: false
+            })
+
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: windows-latest-artifacts
+      - name: Upload Release Windows
+        uses: actions/upload-artifact@v3
+        with:
+          name: release_windows
+          path: ./windows-latest-artifacts/
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ubuntu-latest-artifacts
+      - name: Upload Release Linux
+        uses: actions/upload-artifact@v3
+        with:
+          name: release_linux
+          path: ./ubuntu-latest-artifacts/
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: macos-latest-artifacts
+      - name: Upload Release MacOS
+        uses: actions/upload-artifact@v3
+        with:
+          name: release_macos
+          path: ./macos-latest-artifacts/
