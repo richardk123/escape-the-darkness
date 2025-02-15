@@ -15,7 +15,6 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         target: [x86_64-linux, x86_64-windows, x86_64-macos, aarch64-macos]
 
     steps:
@@ -32,17 +31,13 @@ jobs:
         run: |
           export ZIG_TARGET="${{ matrix.target }}"
           zig build test --verbose  #Added verbose to show build progress
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
-          else
-            zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
-          fi
+          zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
 
       - name: Archive Artifacts (Optional)
         uses: actions/upload-artifact@v4
         if: always() #Always upload artifacts even if build failed
         with:
-          name: ${{ matrix.os }}-artifacts
+          name: ${{ matrix.target }}-artifacts
           path: zig-out/bin/
 
   #Optional job to upload releases to github
