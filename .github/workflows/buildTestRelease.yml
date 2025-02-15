@@ -54,61 +54,27 @@ jobs:
         with:
           name: x86_64-windows-artifacts
 
-      # - name: Download Artifacts # Linux
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: x86_64-linux-artifacts
-
-      # - name: Download Artifacts # OSX x86
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: x86_64-macos-artifacts
-
-      # - name: Download Artifacts # OSX aarch64
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: aarch64-macos-artifacts
-
-      # # Create release
-      # - name: Create Release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ github.ref }}
-      #     release_name: Release ${{ github.ref }}
-      #     body: Release for various platforms.
-      #     draft: false
-      #     prerelease: false
-
-      # Upload builds
-      - name: Upload Release Windows
-        uses: actions/upload-artifact@v4 #Correct action for Github releases
+      - name: Download Artifacts # Linux
+        uses: actions/download-artifact@v4
         with:
-          name: release_windows
-          path: ./x86_64-windows-artifacts/* # Wildcard to include all files and folders within.
+          name: x86_64-linux-artifacts
 
+      - name: Download Artifacts # OSX x86
+        uses: actions/download-artifact@v4
+        with:
+          name: x86_64-macos-artifacts
 
-      # - name: Upload Release Windows
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: release_windows
-      #     path: ./x86_64-windows-artifacts
+      - name: Download Artifacts # OSX aarch64
+        uses: actions/download-artifact@v4
+        with:
+          name: aarch64-macos-artifacts
 
-      # - name: Upload Release Linux
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: release_linux
-      #     path: ./x86_64-linux-artifacts
-
-      # - name: Upload Release MacOS x86_64
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: release_macos_x86_64
-      #     path: ./x86_64-macos-artifacts
-
-      # - name: Upload Release MacOS aarch64
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: release_macos_aarch64
-      #     path: ./aarch64-macos-artifacts
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            x86_64-macos-artifacts.zip
+            aarch64-macos-artifacts.zip
+            x86_64-windows-artifacts.zip
+            x86_64-linux.zip
