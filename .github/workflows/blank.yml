@@ -11,6 +11,7 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest # Use Ubuntu as the base runner
+    name: Build and Test
 
     strategy:
       matrix:
@@ -19,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Zig
-        uses: zigtools/setup-zig@v1
+        uses: mlugg/setup-zig@v1
         with:
           mirror: "https://pkg.machengine.org/zig"
           version: 0.14.0-dev.2577+271452d22
@@ -38,7 +39,7 @@ jobs:
           fi
 
       - name: Archive Artifacts (Optional)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always() #Always upload artifacts even if build failed
         with:
           name: ${{ matrix.os }}-artifacts
@@ -68,29 +69,29 @@ jobs:
             })
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-latest-artifacts
       - name: Upload Release Windows
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release_windows
           path: ./windows-latest-artifacts/
       - name: Download Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ubuntu-latest-artifacts
       - name: Upload Release Linux
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release_linux
           path: ./ubuntu-latest-artifacts/
       - name: Download Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos-latest-artifacts
       - name: Upload Release MacOS
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release_macos
           path: ./macos-latest-artifacts/
