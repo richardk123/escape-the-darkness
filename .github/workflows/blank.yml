@@ -3,7 +3,7 @@ name: Zig CI
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the 'main' branch (or change to your main branch name)
+      - main # Trigger on pushes to the 'main' branch (or change to your main branch name)
   pull_request:
     branches:
       - main
@@ -15,16 +15,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        target: [x86_64-linux, x86_64-windows, x86_64-macos]
-        
+        target: [x86_64-linux, x86_64-windows, x86_64-macos, aarch64-macos]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Zig
-        uses: zigtools/setup-zig@v1.2.1
+        uses: zigtools/setup-zig@v1
         with:
-          mirror: 'https://pkg.machengine.org/zig'
+          mirror: "https://pkg.machengine.org/zig"
           version: 0.14.0-dev.2577+271452d22
 
       - name: Build and Test
@@ -53,7 +53,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0 # Fetch all history for tag information
-          
+
       - name: Setup GitHub CLI
         uses: actions/github-script@v6
         with:
@@ -66,7 +66,6 @@ jobs:
               body: 'Release created by github action',
               prerelease: false
             })
-
 
       - name: Download Artifacts
         uses: actions/download-artifact@v3

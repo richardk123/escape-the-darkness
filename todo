@@ -1,0 +1,4 @@
+[x] Setup window with triangle and imgui
+[ ] Support build for multiple platforms
+[ ] Support camera movement
+[ ] Support loading meshes
