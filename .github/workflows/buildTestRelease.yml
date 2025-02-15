@@ -54,20 +54,20 @@ jobs:
         with:
           name: x86_64-windows-artifacts
 
-      - name: Download Artifacts # Linux
-        uses: actions/download-artifact@v4
-        with:
-          name: x86_64-linux-artifacts
+      # - name: Download Artifacts # Linux
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: x86_64-linux-artifacts
 
-      - name: Download Artifacts # OSX x86
-        uses: actions/download-artifact@v4
-        with:
-          name: x86_64-macos-artifacts
+      # - name: Download Artifacts # OSX x86
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: x86_64-macos-artifacts
 
-      - name: Download Artifacts # OSX aarch64
-        uses: actions/download-artifact@v4
-        with:
-          name: aarch64-macos-artifacts
+      # - name: Download Artifacts # OSX aarch64
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: aarch64-macos-artifacts
 
       # # Create release
       # - name: Create Release
@@ -83,25 +83,32 @@ jobs:
 
       # Upload builds
       - name: Upload Release Windows
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4 #Correct action for Github releases
         with:
           name: release_windows
-          path: ./x86_64-windows-artifacts
+          path: ./x86_64-windows-artifacts/* # Wildcard to include all files and folders within.
 
-      - name: Upload Release Linux
-        uses: actions/upload-artifact@v4
-        with:
-          name: release_linux
-          path: ./x86_64-linux-artifacts
 
-      - name: Upload Release MacOS x86_64
-        uses: actions/upload-artifact@v4
-        with:
-          name: release_macos_x86_64
-          path: ./x86_64-macos-artifacts
+      # - name: Upload Release Windows
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: release_windows
+      #     path: ./x86_64-windows-artifacts
 
-      - name: Upload Release MacOS aarch64
-        uses: actions/upload-artifact@v4
-        with:
-          name: release_macos_aarch64
-          path: ./aarch64-macos-artifacts
+      # - name: Upload Release Linux
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: release_linux
+      #     path: ./x86_64-linux-artifacts
+
+      # - name: Upload Release MacOS x86_64
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: release_macos_x86_64
+      #     path: ./x86_64-macos-artifacts
+
+      # - name: Upload Release MacOS aarch64
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: release_macos_aarch64
+      #     path: ./aarch64-macos-artifacts
