@@ -33,11 +33,17 @@ jobs:
           zig build test --verbose  #Added verbose to show build progress
           zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
 
-      - name: Archive Artifacts (Optional)
+      - name: Package Artifacts
+        run: |
+          mkdir -p artifacts
+          cp -r zig-out/bin artifacts/
+          zip -r ${{ matrix.target }}-artifact.zip artifacts/
+
+      - name: Upload Artifacts (Optional)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}-artifacts
-          path: zig-out/bin/
+          name: ${{ matrix.target }}-artifact
+          path: ${{ matrix.target }}-artifact.zip
 
   #Optional job to upload releases to github
   release:
@@ -60,8 +66,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "snapshot-${{ github.run_number }}"
+          fail_on_unmatched_files: true
           files: |
-            x86_64-macos-artifacts.zip
-            aarch64-macos-artifacts.zip
-            x86_64-windows-artifacts.zip
-            x86_64-linux.zip
+            artifacts/x86_64-macos-artifact.zip
+            artifacts/aarch64-macos-artifact.zip
+            artifacts/x86_64-windows-artifact.zip
+            artifacts/x86_64-linux-artifact.zip
