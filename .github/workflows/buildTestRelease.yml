@@ -1,4 +1,4 @@
-name: Zig CI
+name: Build Test Release
 
 on:
   push:
