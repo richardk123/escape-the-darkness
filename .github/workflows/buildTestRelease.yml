@@ -47,46 +47,61 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # Fetch all history for tag information
 
-      - name: Setup GitHub CLI
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: 'v' + process.env.GITHUB_SHA.substr(0,7),  # Creates a release for each commit, adjust accordingly
-              name: 'Release for commit ' + process.env.GITHUB_SHA.substr(0,7),
-              body: 'Release created by github action',
-              prerelease: false
-            })
-
-      - name: Download Artifacts
+      # Download builds for
+      - name: Download Artifacts # Windows
         uses: actions/download-artifact@v4
         with:
-          name: windows-latest-artifacts
+          name: x86_64-windows-artifacts
+
+      - name: Download Artifacts # Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: x86_64-linux-artifacts
+
+      - name: Download Artifacts # OSX x86
+        uses: actions/download-artifact@v4
+        with:
+          name: x86_64-macos-artifacts
+
+      - name: Download Artifacts # OSX aarch64
+        uses: actions/download-artifact@v4
+        with:
+          name: aarch64-macos-artifacts
+
+      # Create release
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }} # or a more meaningful tag
+          name: Release ${{ github.run_number }} # or a more descriptive name
+          body: Release for various platforms.
+          draft: false # Set to true for a draft release
+          prerelease: false # Set to true for a pre-release
+
+      # Upload builds
       - name: Upload Release Windows
         uses: actions/upload-artifact@v4
         with:
           name: release_windows
-          path: ./windows-latest-artifacts/
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ubuntu-latest-artifacts
+          path: ./x86_64-windows-artifacts
+
       - name: Upload Release Linux
         uses: actions/upload-artifact@v4
         with:
           name: release_linux
-          path: ./ubuntu-latest-artifacts/
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-latest-artifacts
-      - name: Upload Release MacOS
+          path: ./x86_64-linux-artifacts
+
+      - name: Upload Release MacOS x86_64
         uses: actions/upload-artifact@v4
         with:
-          name: release_macos
-          path: ./macos-latest-artifacts/
+          name: release_macos_x86_64
+          path: ./x86_64-macos-artifacts
+
+      - name: Upload Release MacOS aarch64
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_macos_aarch64
+          path: ./aarch64-macos-artifacts/
