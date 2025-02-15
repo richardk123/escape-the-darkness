@@ -1,0 +1,6 @@
+[
+  {
+    "label": "build run",
+    "command": "zig build run"
+  }
+]
