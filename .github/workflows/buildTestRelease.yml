@@ -68,7 +68,7 @@ jobs:
           tag_name: "snapshot-${{ github.run_number }}"
           fail_on_unmatched_files: true
           files: |
-            artifacts/x86_64-macos-artifact.zip
-            artifacts/aarch64-macos-artifact.zip
-            artifacts/x86_64-windows-artifact.zip
-            artifacts/x86_64-linux-artifact.zip
+            artifacts/x86_64-linux-artifact/x86_64-linux-artifact.zip
+            artifacts/x86_64-windows-artifact/x86_64-windows-artifact.zip
+            artifacts/x86_64-macos-artifact/x86_64-macos-artifact.zip
+            artifacts/aarch64-macos-artifact/aarch64-macos-artifact.zip
