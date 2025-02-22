@@ -1,6 +1,6 @@
 const std = @import("std");
 const zglfw = @import("zglfw");
-const mesh_loader = @import("mesh_loader.zig");
+const Meshes = @import("mesh_loader.zig").Meshes;
 const GPUEngine = @import("gpu_engine.zig").GPUEngine;
 const GUI = @import("gui.zig").GUI;
 const window_title = "Escape the darkness";
@@ -26,7 +26,8 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    try mesh_loader.loadMeshes(allocator);
+    var meshes = try Meshes.init(allocator);
+    defer meshes.deinit();
 
     var gpuEngine = try GPUEngine.init(allocator, window);
     defer gpuEngine.deinit(allocator);
