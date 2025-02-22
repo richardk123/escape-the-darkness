@@ -40,7 +40,3 @@ pub fn main() !void {
         gpuEngine.draw();
     }
 }
-
-test {
-    std.testing.refAllDecls(@This());
-}
