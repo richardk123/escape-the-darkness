@@ -5,15 +5,13 @@ const wgpu = zgpu.wgpu;
 const zm = @import("zmath");
 const math = std.math;
 const zgui = @import("zgui");
+const Meshes = @import("mesh_loader.zig").Meshes;
+const Mesh = @import("mesh_loader.zig").Mesh;
+const Vertex = @import("mesh_loader.zig").Vertex;
 
 // Shaders
 const vs_shader = @embedFile("shader/vs.wgsl");
 const fs_shader = @embedFile("shader/fs.wgsl");
-
-const Vertex = struct {
-    position: [3]f32,
-    color: [3]f32,
-};
 
 pub const GPUEngine = struct {
     gctx: *zgpu.GraphicsContext,
@@ -27,7 +25,7 @@ pub const GPUEngine = struct {
     depth_texture: zgpu.TextureHandle,
     depth_texture_view: zgpu.TextureViewHandle,
 
-    pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window) !GPUEngine {
+    pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, meshes: *Meshes) !GPUEngine {
         const gctx = try zgpu.GraphicsContext.create(
             allocator,
             .{
@@ -67,7 +65,7 @@ pub const GPUEngine = struct {
 
             const vertex_attributes = [_]wgpu.VertexAttribute{
                 .{ .format = .float32x3, .offset = 0, .shader_location = 0 },
-                .{ .format = .float32x3, .offset = @offsetOf(Vertex, "color"), .shader_location = 1 },
+                .{ .format = .float32x3, .offset = @offsetOf(Vertex, "normal"), .shader_location = 1 },
             };
             const vertex_buffers = [_]wgpu.VertexBufferLayout{.{
                 .array_stride = @sizeOf(Vertex),
@@ -106,25 +104,22 @@ pub const GPUEngine = struct {
             .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = @sizeOf(zm.Mat) },
         });
 
+        const total_num_vertices = @as(u32, @intCast(meshes.vertices.items.len));
+        const total_num_indices = @as(u32, @intCast(meshes.indices.items.len));
+
         // Create a vertex buffer.
         const vertex_buffer = gctx.createBuffer(.{
             .usage = .{ .copy_dst = true, .vertex = true },
-            .size = 3 * @sizeOf(Vertex),
+            .size = total_num_vertices * @sizeOf(Vertex),
         });
-        const vertex_data = [_]Vertex{
-            .{ .position = [3]f32{ 0.0, 0.5, 0.0 }, .color = [3]f32{ 1.0, 0.0, 0.0 } },
-            .{ .position = [3]f32{ -0.5, -0.5, 0.0 }, .color = [3]f32{ 0.0, 1.0, 0.0 } },
-            .{ .position = [3]f32{ 0.5, -0.5, 0.0 }, .color = [3]f32{ 0.0, 0.0, 1.0 } },
-        };
-        gctx.queue.writeBuffer(gctx.lookupResource(vertex_buffer).?, 0, Vertex, vertex_data[0..]);
+        gctx.queue.writeBuffer(gctx.lookupResource(vertex_buffer).?, 0, Vertex, meshes.vertices.items);
 
         // Create an index buffer.
         const index_buffer = gctx.createBuffer(.{
             .usage = .{ .copy_dst = true, .index = true },
-            .size = 3 * @sizeOf(u32),
+            .size = total_num_indices * @sizeOf(u32),
         });
-        const index_data = [_]u32{ 0, 1, 2 };
-        gctx.queue.writeBuffer(gctx.lookupResource(index_buffer).?, 0, u32, index_data[0..]);
+        gctx.queue.writeBuffer(gctx.lookupResource(index_buffer).?, 0, u32, meshes.indices.items);
 
         // Create a depth texture and its 'view'.
         const depth = createDepthTexture(gctx);
@@ -144,16 +139,16 @@ pub const GPUEngine = struct {
         self.gctx.destroy(allocator);
     }
 
-    pub fn draw(self: *GPUEngine) void {
+    pub fn draw(self: *GPUEngine, meshes: *Meshes) void {
         const gctx = self.gctx;
         const fb_width = gctx.swapchain_descriptor.width;
         const fb_height = gctx.swapchain_descriptor.height;
         const t = @as(f32, @floatCast(gctx.stats.time));
 
         const cam_world_to_view = zm.lookAtLh(
-            zm.f32x4(3.0, 3.0, -3.0, 1.0),
-            zm.f32x4(0.0, 0.0, 0.0, 1.0),
-            zm.f32x4(0.0, 1.0, 0.0, 0.0),
+            zm.f32x4(3.0, 3.0, -3.0, 1.0), // eye position
+            zm.f32x4(0.0, 0.0, 0.0, 1.0), // focus point
+            zm.f32x4(0.0, 1.0, 0.0, 0.0), // up direction ('w' coord is zero because this is a vector not a point)
         );
         const cam_view_to_clip = zm.perspectiveFovLh(
             0.25 * math.pi,
@@ -213,19 +208,13 @@ pub const GPUEngine = struct {
                     mem.slice[0] = zm.transpose(object_to_clip);
 
                     pass.setBindGroup(0, bind_group, &.{mem.offset});
-                    pass.drawIndexed(3, 1, 0, 0, 0);
-                }
-
-                // Draw triangle 2.
-                {
-                    const object_to_world = zm.mul(zm.rotationY(0.75 * t), zm.translation(1.0, 0.0, 0.0));
-                    const object_to_clip = zm.mul(object_to_world, cam_world_to_clip);
-
-                    const mem = gctx.uniformsAllocate(zm.Mat, 1);
-                    mem.slice[0] = zm.transpose(object_to_clip);
-
-                    pass.setBindGroup(0, bind_group, &.{mem.offset});
-                    pass.drawIndexed(3, 1, 0, 0, 0);
+                    pass.drawIndexed(
+                        meshes.meshes.items[0].num_indices,
+                        1,
+                        meshes.meshes.items[0].index_offset,
+                        meshes.meshes.items[0].vertex_offset,
+                        0,
+                    );
                 }
             }
             {

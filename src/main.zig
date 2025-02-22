@@ -29,7 +29,7 @@ pub fn main() !void {
     var meshes = try Meshes.init(allocator);
     defer meshes.deinit();
 
-    var gpuEngine = try GPUEngine.init(allocator, window);
+    var gpuEngine = try GPUEngine.init(allocator, window, &meshes);
     defer gpuEngine.deinit(allocator);
 
     var gui = GUI.init(allocator, window, &gpuEngine);
@@ -38,6 +38,6 @@ pub fn main() !void {
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
         gui.update(&gpuEngine);
-        gpuEngine.draw();
+        gpuEngine.draw(&meshes);
     }
 }

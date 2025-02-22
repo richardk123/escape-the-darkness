@@ -23,7 +23,7 @@ pub const Meshes = struct {
         zmesh.init(allocator);
         defer zmesh.deinit();
 
-        const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ "cube.gltf");
+        const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ "monkey.gltf");
         defer zmesh.io.zcgltf.freeData(data);
 
         var mesh_indices = std.ArrayList(u32).init(allocator);
@@ -55,7 +55,7 @@ pub const Meshes = struct {
         try meshes.append(.{
             .index_offset = 0,
             .vertex_offset = 0,
-            .num_indices = @as(u32, @intCast(indices.items.len)),
+            .num_indices = @as(u32, @intCast(mesh_indices.items.len)),
             .num_vertices = @as(u32, @intCast(mesh_positions.items.len)),
         });
 

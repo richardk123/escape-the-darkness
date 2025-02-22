@@ -6,10 +6,10 @@ struct VertexOut {
 
 @vertex fn main(
     @location(0) position: vec3<f32>,
-    @location(1) color: vec3<f32>,
+    @location(1) normal: vec3<f32>,
 ) -> VertexOut {
     var output: VertexOut;
     output.position_clip = vec4(position, 1.0) * object_to_clip;
-    output.color = color;
+    output.color = normal;
     return output;
 }
