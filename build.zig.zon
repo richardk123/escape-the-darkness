@@ -23,6 +23,10 @@
             .url = "https://github.com/zig-gamedev/zmath/archive/24cdd20f9da09bd1ce7b552907eeaba9bafea59d.tar.gz",
             .hash = "1220081d55b58b968d953db1afc2fb01b2f5733929144e69522461ce25fa6450d84e",
         },
+        .zmesh = .{
+            .url = "https://github.com/zig-gamedev/zmesh/archive/1fc267af7c8bd00cb2d79de12b3e0512a3b787cf.tar.gz",
+            .hash = "1220791c58e1f2e911d5b776efe8893c64684a56d9196b98d95b59ee45b3624b048d",
+        },
         // webgpu for plafforms
         .dawn_x86_64_windows_gnu = .{
             .url = "https://github.com/michal-z/webgpu_dawn-x86_64-windows-gnu/archive/d3a68014e6b6b53fd330a0ccba99e4dcfffddae5.tar.gz",

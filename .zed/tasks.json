@@ -2,5 +2,9 @@
   {
     "label": "build run",
     "command": "zig build run"
+  },
+  {
+    "label": "test file",
+    "command": "zig test $ZED_FILE"
   }
 ]

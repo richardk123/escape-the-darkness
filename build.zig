@@ -54,6 +54,12 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("zmath", zmath.module("root"));
 
+    const zmesh = b.dependency("zmesh", .{
+        .target = target,
+    });
+    exe.root_module.addImport("zmesh", zmesh.module("root"));
+    exe.linkLibrary(zmesh.artifact("zmesh"));
+
     // content directory
     const content_dir = "content/";
     const exe_options = b.addOptions();

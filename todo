@@ -1,4 +1,5 @@
 [x] Setup window with triangle and imgui
 [x] Support build for multiple platforms
+[ ] Load mesh
+[ ] Instanced rendering
 [ ] Support camera movement
-[ ] Support loading meshes
