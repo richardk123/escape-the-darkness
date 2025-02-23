@@ -44,9 +44,9 @@ pub const Meshes = struct {
             null, // tangents (optional)
         );
 
-        std.debug.print(" \n \nindices {any} \n \n", .{mesh_indices.items});
-        std.debug.print(" \n \npositions {any} \n \n", .{mesh_positions.items});
-        std.debug.print(" \n \nnormals {any} \n \n", .{mesh_normals.items});
+        // std.debug.print(" \n \nindices {any} \n \n", .{mesh_indices.items});
+        // std.debug.print(" \n \npositions {any} \n \n", .{mesh_positions.items});
+        // std.debug.print(" \n \nnormals {any} \n \n", .{mesh_normals.items});
 
         var meshes = std.ArrayList(Mesh).init(allocator);
         var vertices = std.ArrayList(Vertex).init(allocator);

@@ -9,6 +9,9 @@ const GPUEngine = @import("gpu_engine.zig").GPUEngine;
 const content_dir = @import("build_options").content_dir;
 
 pub const GUI = struct {
+    drag1: f32,
+    drag2: f32,
+
     pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, gpuEngine: *GPUEngine) GUI {
         zgui.init(allocator);
 
@@ -27,7 +30,10 @@ pub const GUI = struct {
         );
 
         zgui.getStyle().scaleAllSizes(scale_factor);
-        return GUI{};
+        return GUI{
+            .drag1 = 0.0,
+            .drag2 = 0.0,
+        };
     }
 
     pub fn deinit(self: *GUI) void {
@@ -37,12 +43,31 @@ pub const GUI = struct {
     }
 
     pub fn update(self: *GUI, gpuEngine: *GPUEngine) void {
-        // todo: remove
-        _ = self;
         zgui.backend.newFrame(
             gpuEngine.gctx.swapchain_descriptor.width,
             gpuEngine.gctx.swapchain_descriptor.height,
         );
-        zgui.showDemoWindow(null);
+
+        const window_height: f32 = @floatFromInt(gpuEngine.gctx.swapchain_descriptor.height);
+        zgui.setNextWindowPos(.{ .x = 0.0, .y = 0.0 });
+        zgui.setNextWindowSize(.{ .w = 800.0, .h = window_height });
+
+        zgui.bulletText("W, A, S, D :  move camera", .{});
+        zgui.spacing();
+
+        zgui.text("FPS: {d:.1}", .{zgui.io.getFramerate()});
+        zgui.text("Mouse Pos: {d:.1} {d:.1}", .{ zgui.getMousePos()[0], zgui.getMousePos()[1] });
+
+        if (zgui.button("Setup Scene", .{})) {
+            // Button pressed.
+        }
+
+        if (zgui.dragFloat("Drag 1", .{ .v = &self.drag1 })) {
+            // value0 has changed
+        }
+
+        if (zgui.dragFloat("Drag 2", .{ .v = &self.drag2, .min = -1.0, .max = 1.0 })) {
+            // value1 has changed
+        }
     }
 };
