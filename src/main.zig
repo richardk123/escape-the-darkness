@@ -1,7 +1,7 @@
 const std = @import("std");
 const zglfw = @import("zglfw");
-const Meshes = @import("mesh_loader.zig").Meshes;
-const GPUEngine = @import("gpu_engine.zig").GPUEngine;
+const Meshes = @import("renderer/mesh_loader.zig").Meshes;
+const GPUEngine = @import("renderer/gpu_engine.zig").GPUEngine;
 const GUI = @import("gui.zig").GUI;
 const window_title = "Escape the darkness";
 

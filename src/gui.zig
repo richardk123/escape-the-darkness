@@ -5,7 +5,7 @@ const zglfw = @import("zglfw");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 
-const GPUEngine = @import("gpu_engine.zig").GPUEngine;
+const GPUEngine = @import("renderer/gpu_engine.zig").GPUEngine;
 const content_dir = @import("build_options").content_dir;
 
 pub const GUI = struct {
@@ -55,8 +55,8 @@ pub const GUI = struct {
         zgui.bulletText("W, A, S, D :  move camera", .{});
         zgui.spacing();
 
-        zgui.text("FPS: {d:.1}", .{zgui.io.getFramerate()});
-        zgui.text("Mouse Pos: {d:.1} {d:.1}", .{ zgui.getMousePos()[0], zgui.getMousePos()[1] });
+        zgui.text("FPS: {d:.0}", .{zgui.io.getFramerate()});
+        zgui.text("Mouse Pos: {d:.0} {d:.0}", .{ zgui.getMousePos()[0], zgui.getMousePos()[1] });
 
         if (zgui.button("Setup Scene", .{})) {
             // Button pressed.
