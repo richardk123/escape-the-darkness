@@ -13,6 +13,7 @@ const Meshes = @import("mesh_loader.zig").Meshes;
 const Mesh = @import("mesh_loader.zig").Mesh;
 const Vertex = @import("mesh_loader.zig").Vertex;
 const EcholocationProgram = @import("echolocation/echolocation.zig").EcholocationProgram;
+const GridFloorProgram = @import("grid_floor/grid_floor.zig").GridFloorProgram;
 
 pub const RenderParams = struct {
     gctx: *zgpu.GraphicsContext,
@@ -24,9 +25,10 @@ pub const RenderParams = struct {
 
 pub const GPUEngine = struct {
     gctx: *zgpu.GraphicsContext,
-    echolocationProgram: EcholocationProgram,
     depth_texture: zgpu.TextureHandle,
     depth_texture_view: zgpu.TextureViewHandle,
+    echolocation_program: EcholocationProgram,
+    grid_gloor_program: GridFloorProgram,
 
     pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, meshes: *Meshes) !GPUEngine {
         const gctx = try zgpu.GraphicsContext.create(
@@ -46,13 +48,15 @@ pub const GPUEngine = struct {
         );
         errdefer gctx.destroy(allocator);
 
-        const echolocationProgram = try EcholocationProgram.init(gctx, meshes);
+        const echolocation_program = try EcholocationProgram.init(gctx, meshes);
+        const grid_floor_program = try GridFloorProgram.init(allocator, gctx);
         // Create a depth texture and its 'view'.
         const depth = createDepthTexture(gctx);
 
         return GPUEngine{
             .gctx = gctx,
-            .echolocationProgram = echolocationProgram,
+            .echolocation_program = echolocation_program,
+            .grid_gloor_program = grid_floor_program,
             .depth_texture = depth.texture,
             .depth_texture_view = depth.view,
         };
@@ -80,7 +84,8 @@ pub const GPUEngine = struct {
                 .depth_texture_view = self.depth_texture_view,
             };
 
-            self.echolocationProgram.render(renderParams);
+            self.echolocation_program.render(renderParams);
+            self.grid_gloor_program.render(renderParams);
             // gui pass
             {
                 const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
