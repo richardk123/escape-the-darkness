@@ -2,5 +2,6 @@
 [x] Support build for multiple platforms
 [x] Load mesh
 [x] Prepare buffer wrapper
+[x] Setup zed with newest zsl
 [ ] Instanced rendering
 [ ] Support camera movement
