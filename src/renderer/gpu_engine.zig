@@ -84,8 +84,9 @@ pub const GPUEngine = struct {
                 .depth_texture_view = self.depth_texture_view,
             };
 
-            self.echolocation_program.render(renderParams);
             self.grid_gloor_program.render(renderParams);
+            self.echolocation_program.render(renderParams);
+
             // gui pass
             {
                 const color_attachments = [_]wgpu.RenderPassColorAttachment{.{

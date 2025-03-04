@@ -1,5 +1,6 @@
 [x] Setup window with triangle and imgui
 [x] Support build for multiple platforms
-[ ] Load mesh
+[x] Load mesh
+[x] Prepare buffer wrapper
 [ ] Instanced rendering
 [ ] Support camera movement

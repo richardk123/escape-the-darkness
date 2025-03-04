@@ -8,6 +8,7 @@ const Meshes = @import("../mesh_loader.zig").Meshes;
 const Mesh = @import("../mesh_loader.zig").Mesh;
 const Vertex = @import("../mesh_loader.zig").Vertex;
 const RenderParams = @import("../gpu_engine.zig").RenderParams;
+const Buffer = @import("../buffer.zig").Buffer;
 
 // Shaders
 const vs_shader = @embedFile("vs.wgsl");
@@ -17,8 +18,8 @@ pub const EcholocationProgram = struct {
     pipeline: zgpu.RenderPipelineHandle,
     bind_group: zgpu.BindGroupHandle,
 
-    vertex_buffer: zgpu.BufferHandle,
-    index_buffer: zgpu.BufferHandle,
+    vertex_buffer: Buffer(Vertex),
+    index_buffer: Buffer(u32),
 
     pub fn init(gctx: *zgpu.GraphicsContext, meshes: *Meshes) !EcholocationProgram {
         // Create a bind group layout needed for our render pipeline.
@@ -86,18 +87,12 @@ pub const EcholocationProgram = struct {
         const total_num_indices = @as(u32, @intCast(meshes.indices.items.len));
 
         // Create a vertex buffer.
-        const vertex_buffer = gctx.createBuffer(.{
-            .usage = .{ .copy_dst = true, .vertex = true },
-            .size = total_num_vertices * @sizeOf(Vertex),
-        });
-        gctx.queue.writeBuffer(gctx.lookupResource(vertex_buffer).?, 0, Vertex, meshes.vertices.items);
+        const vertex_buffer = Buffer(Vertex).init(gctx, .{ .copy_dst = true, .vertex = true }, total_num_vertices);
+        vertex_buffer.write(gctx, meshes.vertices.items);
 
         // Create an index buffer.
-        const index_buffer = gctx.createBuffer(.{
-            .usage = .{ .copy_dst = true, .index = true },
-            .size = total_num_indices * @sizeOf(u32),
-        });
-        gctx.queue.writeBuffer(gctx.lookupResource(index_buffer).?, 0, u32, meshes.indices.items);
+        const index_buffer = Buffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, total_num_indices);
+        index_buffer.write(gctx, meshes.indices.items);
 
         return EcholocationProgram{
             .pipeline = pipeline,
@@ -129,8 +124,8 @@ pub const EcholocationProgram = struct {
         const cam_world_to_clip = zm.mul(cam_world_to_view, cam_view_to_clip);
 
         pass: {
-            const vb_info = gctx.lookupResourceInfo(self.vertex_buffer) orelse break :pass;
-            const ib_info = gctx.lookupResourceInfo(self.index_buffer) orelse break :pass;
+            const vb_info = gctx.lookupResourceInfo(self.vertex_buffer.gpu_buffer) orelse break :pass;
+            const ib_info = gctx.lookupResourceInfo(self.index_buffer.gpu_buffer) orelse break :pass;
             const pipeline = gctx.lookupResource(self.pipeline) orelse break :pass;
             const bind_group = gctx.lookupResource(self.bind_group) orelse break :pass;
             const depth_view = gctx.lookupResource(params.depth_texture_view) orelse break :pass;
