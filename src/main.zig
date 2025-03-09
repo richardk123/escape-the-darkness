@@ -14,11 +14,8 @@ const Renderer = @import("renderer/renderer.zig").Renderer;
 const Echolocation = @import("renderer/echolocation/echolocation.zig");
 const GridFloor = @import("renderer/grid_floor/grid_floor.zig");
 
-const vs_shader = @embedFile("renderer/echolocation/vs.wgsl");
-const fs_shader = @embedFile("renderer/echolocation/fs.wgsl");
-
-const vs_shader_floor = @embedFile("renderer/grid_floor/vs.wgsl");
-const fs_shader_floor = @embedFile("renderer/grid_floor/fs.wgsl");
+const vs_shader = @embedFile("renderer/echolocation/echolocation.wgsl");
+const vs_shader_floor = @embedFile("renderer/grid_floor/grid_floor.wgsl");
 
 pub fn main() !void {
     try zglfw.init();
@@ -60,7 +57,7 @@ pub fn main() !void {
     const index_buffer = GPUBuffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, total_num_indices);
     index_buffer.write(gctx, meshes.indices.items);
 
-    const pipeline = Pipeline.initRenderPipeline(gctx, vs_shader, fs_shader);
+    const pipeline = Pipeline.initRenderPipeline(gctx, vs_shader);
 
     var floorData = try GridFloor.FloorData.init(allocator);
     defer floorData.deinit();
@@ -71,7 +68,7 @@ pub fn main() !void {
     const floor_index_buffer = GPUBuffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, floorData.getNumberOfVertices());
     floor_index_buffer.write(gctx, floorData.indices.items);
 
-    const floor_pipeline = Pipeline.initRenderPipeline(gctx, vs_shader_floor, fs_shader_floor);
+    const floor_pipeline = Pipeline.initRenderPipeline(gctx, vs_shader_floor);
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();

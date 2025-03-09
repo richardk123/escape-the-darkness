@@ -13,8 +13,7 @@ pub const Pipeline = struct {
 
     pub fn initRenderPipeline(
         gctx: *zgpu.GraphicsContext,
-        vs_shader: [*:0]const u8,
-        fs_shader: [*:0]const u8,
+        shader: [*:0]const u8,
     ) Pipeline {
         // Create a bind group layout needed for our render pipeline.
         const bind_group_layout = gctx.createBindGroupLayout(&.{
@@ -29,11 +28,8 @@ pub const Pipeline = struct {
         const pipeline_layout = gctx.createPipelineLayout(&.{bind_group_layout});
         defer gctx.releaseResource(pipeline_layout);
 
-        const vs_module = zgpu.createWgslShaderModule(gctx.device, vs_shader, "vs");
-        defer vs_module.release();
-
-        const fs_module = zgpu.createWgslShaderModule(gctx.device, fs_shader, "fs");
-        defer fs_module.release();
+        const shader_source = zgpu.createWgslShaderModule(gctx.device, shader, "shader_source");
+        defer shader_source.release();
 
         const color_targets = [_]wgpu.ColorTargetState{.{
             .format = zgpu.GraphicsContext.swapchain_format,
@@ -43,8 +39,8 @@ pub const Pipeline = struct {
 
         const pipeline_descriptor = wgpu.RenderPipelineDescriptor{
             .vertex = wgpu.VertexState{
-                .module = vs_module,
-                .entry_point = "main",
+                .module = shader_source,
+                .entry_point = "vs",
                 .buffer_count = vertex_layouts.len,
                 .buffers = &vertex_layouts,
             },
@@ -59,8 +55,8 @@ pub const Pipeline = struct {
                 .depth_compare = .less,
             },
             .fragment = &wgpu.FragmentState{
-                .module = fs_module,
-                .entry_point = "main",
+                .module = shader_source,
+                .entry_point = "fs",
                 .target_count = color_targets.len,
                 .targets = &color_targets,
             },
