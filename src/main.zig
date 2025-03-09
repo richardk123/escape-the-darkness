@@ -1,9 +1,24 @@
 const std = @import("std");
 const zglfw = @import("zglfw");
-const Meshes = @import("renderer/mesh_loader.zig").Meshes;
-const GPUEngine = @import("renderer/gpu_engine.zig").GPUEngine;
 const GUI = @import("gui.zig").GUI;
 const window_title = "Escape the darkness";
+
+const GPUBuffer = @import("renderer/buffer.zig").GPUBuffer;
+const GPULayout = @import("renderer/layout.zig").GPULayout;
+const Vertex = @import("renderer/mesh_loader.zig").Vertex;
+const Meshes = @import("renderer/mesh_loader.zig").Meshes;
+const Mesh = @import("renderer/mesh_loader.zig").Mesh;
+const Pipeline = @import("renderer/pipeline.zig").Pipeline;
+const Renderer = @import("renderer/renderer.zig").Renderer;
+
+const Echolocation = @import("renderer/echolocation/echolocation.zig");
+const GridFloor = @import("renderer/grid_floor/grid_floor.zig");
+
+const vs_shader = @embedFile("renderer/echolocation/vs.wgsl");
+const fs_shader = @embedFile("renderer/echolocation/fs.wgsl");
+
+const vs_shader_floor = @embedFile("renderer/grid_floor/vs.wgsl");
+const fs_shader_floor = @embedFile("renderer/grid_floor/fs.wgsl");
 
 pub fn main() !void {
     try zglfw.init();
@@ -29,15 +44,43 @@ pub fn main() !void {
     var meshes = try Meshes.init(allocator);
     defer meshes.deinit();
 
-    var gpuEngine = try GPUEngine.init(allocator, window, &meshes);
-    defer gpuEngine.deinit(allocator);
+    var renderer = try Renderer.init(allocator, window);
+    defer renderer.deinit(allocator);
 
-    var gui = GUI.init(allocator, window, &gpuEngine);
-    defer gui.deinit();
+    const total_num_vertices = @as(u32, @intCast(meshes.vertices.items.len));
+    const total_num_indices = @as(u32, @intCast(meshes.indices.items.len));
+
+    const gctx = renderer.gctx;
+
+    // Create a vertex buffer.
+    const vertex_buffer = GPUBuffer(Vertex).init(gctx, .{ .copy_dst = true, .vertex = true }, total_num_vertices);
+    vertex_buffer.write(gctx, meshes.vertices.items);
+
+    // Create an index buffer.
+    const index_buffer = GPUBuffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, total_num_indices);
+    index_buffer.write(gctx, meshes.indices.items);
+
+    const pipeline = Pipeline.initRenderPipeline(gctx, vs_shader, fs_shader);
+
+    var floorData = try GridFloor.FloorData.init(allocator);
+    defer floorData.deinit();
+
+    const floor_vertext_buffer = GPUBuffer(GridFloor.Vertex).init(gctx, .{ .copy_dst = true, .vertex = true }, floorData.getNumberOfVertices());
+    floor_vertext_buffer.write(gctx, floorData.vertices.items);
+
+    const floor_index_buffer = GPUBuffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, floorData.getNumberOfVertices());
+    floor_index_buffer.write(gctx, floorData.indices.items);
+
+    const floor_pipeline = Pipeline.initRenderPipeline(gctx, vs_shader_floor, fs_shader_floor);
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
-        gui.update(&gpuEngine);
-        gpuEngine.draw(&meshes);
+
+        var frame = renderer.beginFrame();
+        const pass = try frame.beginRenderPass();
+
+        Echolocation.renderEcholocation(gctx, pass, &pipeline, &vertex_buffer, &index_buffer, &meshes);
+        GridFloor.renderEcholocation(gctx, pass, &floor_pipeline, &floor_vertext_buffer, &floor_index_buffer, &floorData);
+        try frame.end();
     }
 }
