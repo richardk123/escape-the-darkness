@@ -15,28 +15,30 @@ pub const Mesh = struct {
 };
 
 pub const Meshes = struct {
+    allocator: std.mem.Allocator,
     meshes: std.ArrayList(Mesh),
     vertices: std.ArrayList(Vertex),
     indices: std.ArrayList(u32),
 
     pub fn init(allocator: std.mem.Allocator) !Meshes {
         return Meshes{
+            .allocator = allocator,
             .meshes = std.ArrayList(Mesh).init(allocator),
             .vertices = std.ArrayList(Vertex).init(allocator),
             .indices = std.ArrayList(u32).init(allocator),
         };
     }
 
-    pub fn loadMesh(self: *Meshes, allocator: std.mem.Allocator, comptime mesh_file: [:0]const u8) !usize {
-        zmesh.init(allocator);
+    pub fn loadMesh(self: *Meshes, comptime mesh_file: [:0]const u8) !usize {
+        zmesh.init(self.allocator);
         defer zmesh.deinit();
 
         const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ mesh_file);
         defer zmesh.io.zcgltf.freeData(data);
 
-        var mesh_indices = std.ArrayList(u32).init(allocator);
-        var mesh_positions = std.ArrayList([3]f32).init(allocator);
-        var mesh_normals = std.ArrayList([3]f32).init(allocator);
+        var mesh_indices = std.ArrayList(u32).init(self.allocator);
+        var mesh_positions = std.ArrayList([3]f32).init(self.allocator);
+        var mesh_normals = std.ArrayList([3]f32).init(self.allocator);
         defer mesh_indices.deinit();
         defer mesh_positions.deinit();
         defer mesh_normals.deinit();

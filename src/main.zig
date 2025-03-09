@@ -30,8 +30,8 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     var meshes = try Meshes.init(allocator);
-    const monkey_mesh = try meshes.loadMesh(allocator, "monkey.gltf");
-    const cube_mesh = try meshes.loadMesh(allocator, "cube.gltf");
+    const monkey_mesh = try meshes.loadMesh("monkey.gltf");
+    const cube_mesh = try meshes.loadMesh("cube.gltf");
     defer meshes.deinit();
 
     var engine = try Engine.init(allocator, window, &meshes);
