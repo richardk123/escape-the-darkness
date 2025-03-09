@@ -74,7 +74,7 @@ pub const Meshes = struct {
         for (mesh_indices.items) |mesh_index| {
             self.indices.appendAssumeCapacity(mesh_index);
         }
-        return self.meshes.items.len;
+        return self.meshes.items.len - 1;
     }
 
     pub fn deinit(self: *Meshes) void {
