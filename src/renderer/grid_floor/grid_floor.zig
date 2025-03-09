@@ -8,8 +8,7 @@ const GPUBuffer = @import("../buffer.zig").GPUBuffer;
 const GPULayout = @import("../layout.zig").GPULayout;
 const Pipeline = @import("../pipeline.zig").Pipeline;
 const Camera = @import("../camera.zig");
-
-pub const Vertex = struct { position: [3]f32 };
+const Vertex = @import("../mesh_loader.zig").Vertex;
 
 pub const FloorData = struct {
     vertices: std.ArrayList(Vertex),
@@ -24,15 +23,19 @@ pub const FloorData = struct {
         for (0..100) |i| {
             vertices.appendAssumeCapacity(.{
                 .position = [_]f32{ @floatFromInt(i), 0.0, 0.0 },
+                .normal = [_]f32{ 0.0, 0.0, 0.0 },
             });
             vertices.appendAssumeCapacity(.{
                 .position = [_]f32{ @floatFromInt(i), 0.0, 99.0 },
+                .normal = [_]f32{ 0.0, 0.0, 0.0 },
             });
             vertices.appendAssumeCapacity(.{
                 .position = [_]f32{ 0.0, 0.0, @floatFromInt(i) },
+                .normal = [_]f32{ 0.0, 0.0, 0.0 },
             });
             vertices.appendAssumeCapacity(.{
                 .position = [_]f32{ 99.0, 0.0, @floatFromInt(i) },
+                .normal = [_]f32{ 0.0, 0.0, 0.0 },
             });
             indices.appendAssumeCapacity(@as(u32, @intCast(i * 4 + 0)));
             indices.appendAssumeCapacity(@as(u32, @intCast(i * 4 + 1)));

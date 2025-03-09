@@ -62,7 +62,7 @@ pub fn main() !void {
     var floorData = try GridFloor.FloorData.init(allocator);
     defer floorData.deinit();
 
-    const floor_vertext_buffer = GPUBuffer(GridFloor.Vertex).init(gctx, .{ .copy_dst = true, .vertex = true }, floorData.getNumberOfVertices());
+    const floor_vertext_buffer = GPUBuffer(Vertex).init(gctx, .{ .copy_dst = true, .vertex = true }, floorData.getNumberOfVertices());
     floor_vertext_buffer.write(gctx, floorData.vertices.items);
 
     const floor_index_buffer = GPUBuffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, floorData.getNumberOfVertices());
