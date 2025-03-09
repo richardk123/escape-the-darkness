@@ -39,6 +39,8 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     var meshes = try Meshes.init(allocator);
+    _ = try meshes.loadMesh(allocator, "monkey.gltf");
+    _ = try meshes.loadMesh(allocator, "cube.gltf");
     defer meshes.deinit();
 
     var renderer = try Renderer.init(allocator, window);
@@ -77,7 +79,7 @@ pub fn main() !void {
         const pass = try frame.beginRenderPass();
 
         Echolocation.renderEcholocation(gctx, pass, &pipeline, &vertex_buffer, &index_buffer, &meshes);
-        GridFloor.renderEcholocation(gctx, pass, &floor_pipeline, &floor_vertext_buffer, &floor_index_buffer, &floorData);
+        GridFloor.renderEcholocation(gctx, pass, &floor_pipeline, &floor_vertext_buffer, &floor_index_buffer);
         try frame.end();
     }
 }

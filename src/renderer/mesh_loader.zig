@@ -1,5 +1,5 @@
-const zmesh = @import("zmesh");
 const std = @import("std");
+const zmesh = @import("zmesh");
 const expect = std.testing.expect;
 
 pub const Vertex = extern struct {
@@ -20,10 +20,18 @@ pub const Meshes = struct {
     indices: std.ArrayList(u32),
 
     pub fn init(allocator: std.mem.Allocator) !Meshes {
+        return Meshes{
+            .meshes = std.ArrayList(Mesh).init(allocator),
+            .vertices = std.ArrayList(Vertex).init(allocator),
+            .indices = std.ArrayList(u32).init(allocator),
+        };
+    }
+
+    pub fn loadMesh(self: *Meshes, allocator: std.mem.Allocator, comptime mesh_file: [:0]const u8) !usize {
         zmesh.init(allocator);
         defer zmesh.deinit();
 
-        const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ "monkey.gltf");
+        const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ mesh_file);
         defer zmesh.io.zcgltf.freeData(data);
 
         var mesh_indices = std.ArrayList(u32).init(allocator);
@@ -44,39 +52,29 @@ pub const Meshes = struct {
             null, // tangents (optional)
         );
 
-        // std.debug.print(" \n \nindices {any} \n \n", .{mesh_indices.items});
-        // std.debug.print(" \n \npositions {any} \n \n", .{mesh_positions.items});
-        // std.debug.print(" \n \nnormals {any} \n \n", .{mesh_normals.items});
+        const pre_indices_len = self.indices.items.len;
+        const pre_vertices_len = self.vertices.items.len;
 
-        var meshes = std.ArrayList(Mesh).init(allocator);
-        var vertices = std.ArrayList(Vertex).init(allocator);
-        var indices = std.ArrayList(u32).init(allocator);
-
-        try meshes.append(.{
-            .index_offset = 0,
-            .vertex_offset = 0,
+        try self.meshes.append(.{
+            .index_offset = @as(u32, @intCast(pre_indices_len)),
+            .vertex_offset = @as(i32, @intCast(pre_vertices_len)),
             .num_indices = @as(u32, @intCast(mesh_indices.items.len)),
             .num_vertices = @as(u32, @intCast(mesh_positions.items.len)),
         });
 
-        try vertices.ensureTotalCapacity(mesh_positions.items.len);
+        try self.vertices.ensureTotalCapacity(mesh_positions.items.len);
         for (mesh_positions.items, 0..) |_, index| {
-            vertices.appendAssumeCapacity(.{
+            self.vertices.appendAssumeCapacity(.{
                 .position = mesh_positions.items[index],
                 .normal = mesh_normals.items[index],
             });
         }
 
-        try indices.ensureTotalCapacity(mesh_indices.items.len);
+        try self.indices.ensureTotalCapacity(mesh_indices.items.len);
         for (mesh_indices.items) |mesh_index| {
-            indices.appendAssumeCapacity(mesh_index);
+            self.indices.appendAssumeCapacity(mesh_index);
         }
-
-        return Meshes{
-            .meshes = meshes,
-            .vertices = vertices,
-            .indices = indices,
-        };
+        return self.meshes.items.len;
     }
 
     pub fn deinit(self: *Meshes) void {

@@ -47,7 +47,7 @@ pub const Pipeline = struct {
             .primitive = wgpu.PrimitiveState{
                 .front_face = .ccw,
                 .cull_mode = .none,
-                .topology = .line_list,
+                .topology = .triangle_list,
             },
             .depth_stencil = &wgpu.DepthStencilState{
                 .format = .depth32_float,

@@ -59,7 +59,7 @@ pub const FloorData = struct {
     }
 };
 
-pub fn renderEcholocation(gctx: *zgpu.GraphicsContext, pass: wgpu.RenderPassEncoder, pip: *const Pipeline, vertex_buffer: *const GPUBuffer(Vertex), index_buffer: *const GPUBuffer(u32), floorData: *FloorData) void {
+pub fn renderEcholocation(gctx: *zgpu.GraphicsContext, pass: wgpu.RenderPassEncoder, pip: *const Pipeline, vertex_buffer: *const GPUBuffer(Vertex), index_buffer: *const GPUBuffer(u32)) void {
     pass: {
         const vb_info = gctx.lookupResourceInfo(vertex_buffer.gpu_buffer) orelse break :pass;
         const ib_info = gctx.lookupResourceInfo(index_buffer.gpu_buffer) orelse break :pass;
@@ -75,7 +75,7 @@ pub fn renderEcholocation(gctx: *zgpu.GraphicsContext, pass: wgpu.RenderPassEnco
 
             pass.setBindGroup(0, bind_group, &.{memOffset});
             pass.drawIndexed(
-                floorData.getNumberOfVertices(),
+                index_buffer.total_number,
                 1,
                 0,
                 0,

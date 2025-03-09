@@ -4,10 +4,11 @@ const wgpu = zgpu.wgpu;
 pub fn GPUBuffer(comptime T: type) type {
     return struct {
         gpu_buffer: zgpu.BufferHandle,
+        total_number: u32,
 
         const Self = @This();
 
-        pub fn init(gctx: *zgpu.GraphicsContext, usage: wgpu.BufferUsage, total_number: u64) Self {
+        pub fn init(gctx: *zgpu.GraphicsContext, usage: wgpu.BufferUsage, total_number: u32) Self {
             const buffer = gctx.createBuffer(.{
                 .usage = usage,
                 .size = total_number * @sizeOf(T),
@@ -15,6 +16,7 @@ pub fn GPUBuffer(comptime T: type) type {
 
             return .{
                 .gpu_buffer = buffer,
+                .total_number = total_number,
             };
         }
 
