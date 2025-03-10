@@ -57,7 +57,7 @@ pub const Engine = struct {
         try self.renderer.endPass();
     }
 
-    pub fn drawMesh(self: *Engine, mesh_index: usize, material: *const Material(Vertex)) !void {
+    pub fn draw(self: *Engine, mesh_index: usize, material: *const Material(Vertex)) !void {
         const gctx = self.renderer.gctx;
         pass: {
             const pass = self.renderer.pass orelse break :pass;

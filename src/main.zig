@@ -5,6 +5,7 @@ const window_title = "Escape the darkness";
 
 const Meshes = @import("renderer/mesh_loader.zig").Meshes;
 const Engine = @import("renderer/engine.zig").Engine;
+const Grid = @import("generated_mesh/grid.zig").Grid;
 
 const echolocation_shader = @embedFile("renderer/shader/echolocation.wgsl");
 const debug_shader = @embedFile("renderer/shader/debug.wgsl");
@@ -33,6 +34,12 @@ pub fn main() !void {
     var meshes = try Meshes.init(allocator);
     const monkey_mesh = try meshes.loadMesh("monkey.gltf");
     const cube_mesh = try meshes.loadMesh("cube.gltf");
+    const torus_mesh = try meshes.loadMesh("torus.gltf");
+
+    const grid_data = try Grid.init(allocator, 100, 1.0);
+    defer grid_data.deinit();
+
+    const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
     defer meshes.deinit();
 
     var engine = try Engine.init(allocator, window, &meshes);
@@ -44,8 +51,10 @@ pub fn main() !void {
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
         try engine.beginPass();
-        try engine.drawMesh(cube_mesh, &debug_material);
-        try engine.drawMesh(monkey_mesh, &echolocation_material);
+        try engine.draw(grid_mesh, &debug_material);
+        try engine.draw(cube_mesh, &echolocation_material);
+        try engine.draw(torus_mesh, &echolocation_material);
+        try engine.draw(monkey_mesh, &echolocation_material);
         try engine.endPass();
     }
 }

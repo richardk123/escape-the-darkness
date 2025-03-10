@@ -66,7 +66,7 @@ pub const Meshes = struct {
 
         try self.vertices.ensureTotalCapacity(mesh_positions.items.len);
         for (mesh_positions.items, 0..) |_, index| {
-            self.vertices.appendAssumeCapacity(.{
+            try self.vertices.append(.{
                 .position = mesh_positions.items[index],
                 .normal = mesh_normals.items[index],
             });
@@ -74,8 +74,33 @@ pub const Meshes = struct {
 
         try self.indices.ensureTotalCapacity(mesh_indices.items.len);
         for (mesh_indices.items) |mesh_index| {
-            self.indices.appendAssumeCapacity(mesh_index);
+            try self.indices.append(mesh_index);
         }
+        return self.meshes.items.len - 1;
+    }
+
+    pub fn addGeneratedMesh(self: *Meshes, vertices_data: []const Vertex, indices_data: []const u32) !usize {
+        const pre_indices_len = self.indices.items.len;
+        const pre_vertices_len = self.vertices.items.len;
+
+        const mesh: Mesh = .{
+            .index_offset = @as(u32, @intCast(pre_indices_len)),
+            .vertex_offset = @as(i32, @intCast(pre_vertices_len)),
+            .num_indices = @as(u32, @intCast(indices_data.len)),
+            .num_vertices = @as(u32, @intCast(vertices_data.len)),
+        };
+        // Create new mesh entry
+        try self.meshes.append(mesh);
+
+        // Add vertices
+        try self.vertices.appendSlice(vertices_data);
+
+        // Add indices
+        try self.indices.appendSlice(indices_data);
+
+        std.debug.print("dynamic mesh: num_vertices {} num_indices {} \n\n", .{ mesh.num_vertices, mesh.num_indices });
+
+        // Return the index of the new mesh
         return self.meshes.items.len - 1;
     }
 
