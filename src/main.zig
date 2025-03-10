@@ -6,7 +6,8 @@ const window_title = "Escape the darkness";
 const Meshes = @import("renderer/mesh_loader.zig").Meshes;
 const Engine = @import("renderer/engine.zig").Engine;
 
-const echolocation_shader = @embedFile("renderer/echolocation/echolocation.wgsl");
+const echolocation_shader = @embedFile("renderer/shader/echolocation.wgsl");
+const debug_shader = @embedFile("renderer/shader/debug.wgsl");
 
 pub fn main() !void {
     try zglfw.init();
@@ -38,11 +39,13 @@ pub fn main() !void {
     defer engine.deinit();
 
     const echolocation_material = engine.createMaterial(echolocation_shader);
-    const debug_material = engine.createMaterialDebug(echolocation_shader);
+    const debug_material = engine.createMaterialDebug(debug_shader);
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
-        try engine.drawMesh(cube_mesh, &echolocation_material);
-        try engine.drawMesh(monkey_mesh, &debug_material);
+        try engine.beginPass();
+        try engine.drawMesh(cube_mesh, &debug_material);
+        try engine.drawMesh(monkey_mesh, &echolocation_material);
+        try engine.endPass();
     }
 }

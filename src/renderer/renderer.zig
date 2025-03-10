@@ -3,12 +3,12 @@ const zglfw = @import("zglfw");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 
-const Frame = @import("frame.zig").Frame;
-
 pub const Renderer = struct {
     gctx: *zgpu.GraphicsContext,
     depth_texture: zgpu.TextureHandle,
     depth_texture_view: zgpu.TextureViewHandle,
+    encoder: ?wgpu.CommandEncoder = null,
+    pass: ?wgpu.RenderPassEncoder = null,
 
     pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window) !Renderer {
         const gctx = try zgpu.GraphicsContext.create(
@@ -36,15 +36,67 @@ pub const Renderer = struct {
         };
     }
 
-    pub fn beginFrame(self: *Renderer) Frame {
-        return Frame.init(self);
+    pub fn beginPass(self: *Renderer) !void {
+        const gctx = self.gctx;
+
+        const depth_view = gctx.lookupResource(self.depth_texture_view) orelse return error.DepthViewNotExist;
+        const back_buffer_view = gctx.swapchain.getCurrentTextureView();
+
+        const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
+            .view = back_buffer_view,
+            .load_op = .clear,
+            .store_op = .store,
+        }};
+        const depth_attachment = wgpu.RenderPassDepthStencilAttachment{
+            .view = depth_view,
+            .depth_load_op = .clear,
+            .depth_store_op = .store,
+            .depth_clear_value = 1.0,
+        };
+        const render_pass_info = wgpu.RenderPassDescriptor{
+            .color_attachment_count = color_attachments.len,
+            .color_attachments = &color_attachments,
+            .depth_stencil_attachment = &depth_attachment,
+        };
+
+        const encoder = gctx.device.createCommandEncoder(null);
+        const pass = encoder.beginRenderPass(render_pass_info);
+        self.encoder = encoder;
+        self.pass = pass;
+    }
+
+    pub fn endPass(self: *Renderer) !void {
+        const gctx = self.gctx;
+
+        const back_buffer_view = gctx.swapchain.getCurrentTextureView();
+        back_buffer_view.release();
+
+        if (self.pass) |pass| {
+            pass.end();
+            pass.release();
+        } else {
+            return error.PassDoesNotExist;
+        }
+
+        if (self.encoder) |encoder| {
+            const commands = encoder.finish(null);
+            gctx.submit(&.{commands});
+
+            if (gctx.present() == .swap_chain_resized) {
+                self.updateDepthTexture();
+            }
+
+            encoder.release();
+        } else {
+            return error.EncoderDoesNotExist;
+        }
     }
 
     pub fn deinit(self: *Renderer, allocator: std.mem.Allocator) void {
         self.gctx.destroy(allocator);
     }
 
-    pub fn updateDepthTexture(self: *Renderer) void {
+    fn updateDepthTexture(self: *Renderer) void {
         // Release old depth texture.
         self.gctx.releaseResource(self.depth_texture_view);
         self.gctx.destroyResource(self.depth_texture);

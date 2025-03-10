@@ -49,12 +49,18 @@ pub const Engine = struct {
         return Material(Vertex).init(gctx, shader, .triangle_list);
     }
 
+    pub fn beginPass(self: *Engine) !void {
+        try self.renderer.beginPass();
+    }
+
+    pub fn endPass(self: *Engine) !void {
+        try self.renderer.endPass();
+    }
+
     pub fn drawMesh(self: *Engine, mesh_index: usize, material: *const Material(Vertex)) !void {
         const gctx = self.renderer.gctx;
-        var frame = self.renderer.beginFrame();
-        const pass = try frame.beginRenderPass();
-
         pass: {
+            const pass = self.renderer.pass orelse break :pass;
             const vb_info = gctx.lookupResourceInfo(self.vertex_buffer.gpu_buffer) orelse break :pass;
             const ib_info = gctx.lookupResourceInfo(self.index_buffer.gpu_buffer) orelse break :pass;
             const pipeline = gctx.lookupResource(material.pipeline) orelse break :pass;
@@ -75,8 +81,6 @@ pub const Engine = struct {
                 0,
             );
         }
-
-        try frame.end();
     }
 
     pub fn deinit(self: *Engine) void {
