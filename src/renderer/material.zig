@@ -40,15 +40,7 @@ pub fn Material(comptime T: type) type {
                 .format = zgpu.GraphicsContext.swapchain_format,
             }};
 
-            // const field_names = comptime blk: {
-            //     const fields = std.meta.fields(T);
-            //     var names: [fields.len][]const u8 = undefined;
-            //     for (fields, 0..) |field, i| {
-            //         names[i] = field.name;
-            //     }
-            //     break :blk &names;
-            // };
-            const vertex_layouts = GPULayout(T).createVertexBufferLayouts(&[_][]const u8{ "position", "normal" });
+            const vertex_layouts = GPULayout(T).createVertexBufferLayouts();
 
             const pipeline_descriptor = wgpu.RenderPipelineDescriptor{
                 .vertex = wgpu.VertexState{
