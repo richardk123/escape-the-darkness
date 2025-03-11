@@ -3,8 +3,7 @@
 [x] Load mesh
 [x] Prepare buffer wrapper
 [x] Setup zed with newest zsl
-[x] Support multiple instances
-[ ] Support dynamic mesh
+[x] Support dynamic mesh
+[ ] Support multiple instances
 [ ] Support gui
-[ ] Instanced rendering
 [ ] Support camera movement

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Vertex = @import("../renderer/mesh_loader.zig").Vertex;
+const Vertex = @import("../mesh.zig").Vertex;
 
 pub const Grid = struct {
     vertices: std.ArrayList(Vertex),

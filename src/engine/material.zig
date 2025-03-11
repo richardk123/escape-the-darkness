@@ -2,11 +2,9 @@ const std = @import("std");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 const zm = @import("zmath");
-const Meshes = @import("mesh_loader.zig").Meshes;
-const Mesh = @import("mesh_loader.zig").Mesh;
-const Vertex = @import("mesh_loader.zig").Vertex;
-const GPUBuffer = @import("buffer.zig").GPUBuffer;
-const GPULayout = @import("layout.zig").GPULayout;
+const mesh = @import("mesh.zig");
+const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
+const GPULayout = @import("common/layout.zig").GPULayout;
 
 pub fn Material(comptime T: type) type {
     return struct {

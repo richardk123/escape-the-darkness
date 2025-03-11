@@ -1,21 +1,20 @@
 const std = @import("std");
 const zglfw = @import("zglfw");
 
-const Renderer = @import("renderer.zig").Renderer;
-const Meshes = @import("mesh_loader.zig").Meshes;
+const Renderer = @import("common/renderer.zig").Renderer;
+const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
 const Material = @import("material.zig").Material;
-const Vertex = @import("mesh_loader.zig").Vertex;
-const GPUBuffer = @import("buffer.zig").GPUBuffer;
 const Camera = @import("camera.zig");
+const mesh = @import("mesh.zig");
 
 pub const Engine = struct {
     allocator: std.mem.Allocator,
-    meshes: *Meshes,
+    meshes: *mesh.Meshes,
     renderer: Renderer,
-    vertex_buffer: GPUBuffer(Vertex),
+    vertex_buffer: GPUBuffer(mesh.Vertex),
     index_buffer: GPUBuffer(u32),
 
-    pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, meshes: *Meshes) !Engine {
+    pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, meshes: *mesh.Meshes) !Engine {
         const renderer = try Renderer.init(allocator, window);
         const gctx = renderer.gctx;
 
@@ -23,7 +22,7 @@ pub const Engine = struct {
         const total_num_indices = @as(u32, @intCast(meshes.indices.items.len));
 
         // Create a vertex buffer.
-        const vertex_buffer = GPUBuffer(Vertex).init(gctx, .{ .copy_dst = true, .vertex = true }, total_num_vertices);
+        const vertex_buffer = GPUBuffer(mesh.Vertex).init(gctx, .{ .copy_dst = true, .vertex = true }, total_num_vertices);
         vertex_buffer.write(gctx, meshes.vertices.items);
 
         // Create an index buffer.
@@ -39,14 +38,14 @@ pub const Engine = struct {
         };
     }
 
-    pub fn createMaterialDebug(self: *Engine, shader: [*:0]const u8) Material(Vertex) {
+    pub fn createMaterialDebug(self: *Engine, shader: [*:0]const u8) Material(mesh.Vertex) {
         const gctx = self.renderer.gctx;
-        return Material(Vertex).init(gctx, shader, .line_list);
+        return Material(mesh.Vertex).init(gctx, shader, .line_list);
     }
 
-    pub fn createMaterial(self: *Engine, shader: [*:0]const u8) Material(Vertex) {
+    pub fn createMaterial(self: *Engine, shader: [*:0]const u8) Material(mesh.Vertex) {
         const gctx = self.renderer.gctx;
-        return Material(Vertex).init(gctx, shader, .triangle_list);
+        return Material(mesh.Vertex).init(gctx, shader, .triangle_list);
     }
 
     pub fn beginPass(self: *Engine) !void {
@@ -57,7 +56,7 @@ pub const Engine = struct {
         try self.renderer.endPass();
     }
 
-    pub fn draw(self: *Engine, mesh_index: usize, material: *const Material(Vertex)) !void {
+    pub fn draw(self: *Engine, mesh_index: usize, material: *const Material(mesh.Vertex)) !void {
         const gctx = self.renderer.gctx;
         pass: {
             const pass = self.renderer.pass orelse break :pass;

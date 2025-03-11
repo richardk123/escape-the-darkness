@@ -3,12 +3,12 @@ const zglfw = @import("zglfw");
 const GUI = @import("gui.zig").GUI;
 const window_title = "Escape the darkness";
 
-const Meshes = @import("renderer/mesh_loader.zig").Meshes;
-const Engine = @import("renderer/engine.zig").Engine;
-const Grid = @import("generated_mesh/grid.zig").Grid;
+const Meshes = @import("engine/mesh.zig").Meshes;
+const Engine = @import("engine/engine.zig").Engine;
+const Grid = @import("engine/mesh/grid.zig").Grid;
 
-const echolocation_shader = @embedFile("renderer/shader/echolocation.wgsl");
-const debug_shader = @embedFile("renderer/shader/debug.wgsl");
+const echolocation_shader = @embedFile("engine/shader/echolocation.wgsl");
+const debug_shader = @embedFile("engine/shader/debug.wgsl");
 
 pub fn main() !void {
     try zglfw.init();
