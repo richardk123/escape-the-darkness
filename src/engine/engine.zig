@@ -44,10 +44,11 @@ pub const Engine = struct {
         };
     }
 
-    pub fn addMeshInstance(self: *Engine, material: *const Material(mesh.Vertex), mesh_index: usize) !void {
+    pub fn addMeshInstance(self: *Engine, material: *const Material(mesh.Vertex), mesh_index: usize) !*mesh_instance.MeshInstance {
         const gctx = self.renderer.gctx;
         const mi = try mesh_instance.MeshInstance.init(self.allocator, gctx, material, mesh_index);
         try self.mesh_instances.append(mi);
+        return &self.mesh_instances.items[self.mesh_instances.items.len - 1];
     }
 
     pub fn createMaterialDebug(self: *Engine, shader: [*:0]const u8) Material(mesh.Vertex) {
@@ -87,11 +88,12 @@ pub const Engine = struct {
                 pass.setPipeline(pipeline);
 
                 const memOffset = Camera.calculateCamera(gctx);
-
+                const instance_count = @as(u32, @intCast(mi.instances.items.len));
+                std.debug.print("instance_count {} \n", .{mi.instances.items.len});
                 pass.setBindGroup(0, bind_group, &.{memOffset});
                 pass.drawIndexed(
                     self.meshes.meshes.items[mesh_index].num_indices,
-                    1,
+                    instance_count,
                     self.meshes.meshes.items[mesh_index].index_offset,
                     self.meshes.meshes.items[mesh_index].vertex_offset,
                     0,
