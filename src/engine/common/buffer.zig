@@ -25,5 +25,9 @@ pub fn GPUBuffer(comptime T: type) type {
         pub fn write(self: *const GPUBuffer(T), data: []const T) void {
             self.gctx.queue.writeBuffer(self.gctx.lookupResource(self.gpu_buffer).?, 0, T, data);
         }
+
+        pub fn writeWithOffset(self: *const GPUBuffer(T), offset: usize, data: []const T) void {
+            self.gctx.queue.writeBuffer(self.gctx.lookupResource(self.gpu_buffer).?, offset * @sizeOf(T), T, data);
+        }
     };
 }

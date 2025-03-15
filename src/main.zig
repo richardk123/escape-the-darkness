@@ -35,31 +35,37 @@ pub fn main() !void {
     defer meshes.deinit();
 
     const monkey_mesh = try meshes.loadMesh("monkey.gltf");
-    // const cube_mesh = try meshes.loadMesh("cube.gltf");
-    // const torus_mesh = try meshes.loadMesh("torus.gltf");
+    const cube_mesh = try meshes.loadMesh("cube.gltf");
+    const torus_mesh = try meshes.loadMesh("torus.gltf");
 
     const grid_data = try Grid.init(allocator, 100, 1.0);
     defer grid_data.deinit();
 
-    // const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
+    const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
 
     var engine = try Engine.init(allocator, window, &meshes);
     defer engine.deinit();
 
     const echolocation_material = engine.createMaterial(echolocation_shader);
-    // const debug_material = engine.createMaterialDebug(debug_shader);
+    const debug_material = engine.createMaterialDebug(debug_shader);
 
     var monkey = try engine.addMeshInstance(&echolocation_material, monkey_mesh);
-    monkey.addInstance(.{
-        .position = .{ 0, 0, 0 },
-        .rotation = .{ 0, 0, 0, 1 },
-        .scale = .{ 1, 1, 1 },
-    });
-    monkey.addInstance(.{ .position = .{ 1, 0, 0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    monkey.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    monkey.addInstance(.{ .position = .{ 10.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    monkey.addInstance(.{ .position = .{ 20.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
-    // _ = try engine.addMeshInstance(&echolocation_material, cube_mesh);
-    // _ = try engine.addMeshInstance(&echolocation_material, torus_mesh);
-    // _ = try engine.addMeshInstance(&debug_material, grid_mesh);
+    var cube = try engine.addMeshInstance(&echolocation_material, cube_mesh);
+    cube.addInstance(.{ .position = .{ 0.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    cube.addInstance(.{ .position = .{ 10.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    cube.addInstance(.{ .position = .{ 20.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+
+    var torus = try engine.addMeshInstance(&echolocation_material, torus_mesh);
+    torus.addInstance(.{ .position = .{ 0.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    torus.addInstance(.{ .position = .{ 10.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 0.75, 0.75, 0.75 } });
+    torus.addInstance(.{ .position = .{ 20.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 0.5, 0.5, 0.5 } });
+
+    var grid = try engine.addMeshInstance(&debug_material, grid_mesh);
+    grid.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();

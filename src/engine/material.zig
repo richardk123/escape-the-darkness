@@ -4,6 +4,7 @@ const wgpu = zgpu.wgpu;
 const zm = @import("zmath");
 const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
 const GPULayout = @import("common/layout.zig").GPULayout;
+const Instance = @import("mesh_instance.zig").Instance;
 
 pub fn Material(comptime T: type) type {
     return struct {
@@ -14,17 +15,20 @@ pub fn Material(comptime T: type) type {
 
         pub fn init(
             gctx: *zgpu.GraphicsContext,
+            instance_buffer: GPUBuffer(Instance),
             shader: [*:0]const u8,
             topology: wgpu.PrimitiveTopology,
         ) Self {
             // Create a bind group layout needed for our render pipeline.
             const bind_group_layout = gctx.createBindGroupLayout(&.{
                 zgpu.bufferEntry(0, .{ .vertex = true }, .uniform, true, 0),
+                zgpu.bufferEntry(1, .{ .vertex = true }, .read_only_storage, false, 0),
             });
             defer gctx.releaseResource(bind_group_layout);
 
             const bind_group = gctx.createBindGroup(bind_group_layout, &.{
                 .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = @sizeOf(zm.Mat) },
+                .{ .binding = 1, .buffer_handle = instance_buffer.gpu_buffer, .offset = 0, .size = (@sizeOf(Instance) * instance_buffer.total_number) },
             });
 
             const pipeline_layout = gctx.createPipelineLayout(&.{bind_group_layout});
