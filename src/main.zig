@@ -32,6 +32,8 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     var meshes = try Meshes.init(allocator);
+    defer meshes.deinit();
+
     const monkey_mesh = try meshes.loadMesh("monkey.gltf");
     const cube_mesh = try meshes.loadMesh("cube.gltf");
     const torus_mesh = try meshes.loadMesh("torus.gltf");
@@ -40,7 +42,6 @@ pub fn main() !void {
     defer grid_data.deinit();
 
     const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
-    defer meshes.deinit();
 
     var engine = try Engine.init(allocator, window, &meshes);
     defer engine.deinit();
@@ -48,13 +49,15 @@ pub fn main() !void {
     const echolocation_material = engine.createMaterial(echolocation_shader);
     const debug_material = engine.createMaterialDebug(debug_shader);
 
+    try engine.addMeshInstance(&echolocation_material, monkey_mesh);
+    try engine.addMeshInstance(&echolocation_material, cube_mesh);
+    try engine.addMeshInstance(&echolocation_material, torus_mesh);
+    try engine.addMeshInstance(&debug_material, grid_mesh);
+
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
-        try engine.beginPass();
-        try engine.draw(grid_mesh, &debug_material);
-        try engine.draw(cube_mesh, &echolocation_material);
-        try engine.draw(torus_mesh, &echolocation_material);
-        try engine.draw(monkey_mesh, &echolocation_material);
-        try engine.endPass();
+        // try engine.beginPass();
+        try engine.draw();
+        // try engine.endPass();
     }
 }

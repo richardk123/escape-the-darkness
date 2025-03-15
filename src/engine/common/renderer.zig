@@ -4,6 +4,7 @@ const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 
 pub const Renderer = struct {
+    allocator: std.mem.Allocator,
     gctx: *zgpu.GraphicsContext,
     depth_texture: zgpu.TextureHandle,
     depth_texture_view: zgpu.TextureViewHandle,
@@ -30,6 +31,7 @@ pub const Renderer = struct {
 
         const depth_texture_data = createDepthTexture(gctx);
         return Renderer{
+            .allocator = allocator,
             .gctx = gctx,
             .depth_texture = depth_texture_data.texture,
             .depth_texture_view = depth_texture_data.view,
@@ -92,8 +94,8 @@ pub const Renderer = struct {
         }
     }
 
-    pub fn deinit(self: *Renderer, allocator: std.mem.Allocator) void {
-        self.gctx.destroy(allocator);
+    pub fn deinit(self: *Renderer) void {
+        self.gctx.destroy(self.allocator);
     }
 
     fn updateDepthTexture(self: *Renderer) void {

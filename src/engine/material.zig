@@ -2,7 +2,6 @@ const std = @import("std");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 const zm = @import("zmath");
-const mesh = @import("mesh.zig");
 const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
 const GPULayout = @import("common/layout.zig").GPULayout;
 
