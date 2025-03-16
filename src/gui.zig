@@ -60,24 +60,16 @@ pub const GUI = struct {
 
             // Camera Eye Position
             if (zgui.collapsingHeader("Camera Position", .{})) {
-                _ = zgui.dragFloat("X##eye", .{ .v = &self.engine.camera.eye[0], .speed = 0.1 });
-                _ = zgui.dragFloat("Y##eye", .{ .v = &self.engine.camera.eye[1], .speed = 0.1 });
-                _ = zgui.dragFloat("Z##eye", .{ .v = &self.engine.camera.eye[2], .speed = 0.1 });
-            }
-
-            // Camera Look At Position
-            if (zgui.collapsingHeader("Look At Target", .{})) {
-                _ = zgui.dragFloat("X##look", .{ .v = &self.engine.camera.lookAt[0], .speed = 0.1 });
-                _ = zgui.dragFloat("Y##look", .{ .v = &self.engine.camera.lookAt[1], .speed = 0.1 });
-                _ = zgui.dragFloat("Z##look", .{ .v = &self.engine.camera.lookAt[2], .speed = 0.1 });
+                _ = zgui.dragFloat("X##eye", .{ .v = &self.engine.camera.position[0], .speed = 0.1 });
+                _ = zgui.dragFloat("Y##eye", .{ .v = &self.engine.camera.position[1], .speed = 0.1 });
+                _ = zgui.dragFloat("Z##eye", .{ .v = &self.engine.camera.position[2], .speed = 0.1 });
             }
 
             zgui.separator();
 
             // Reset Camera Button
             if (zgui.button("Reset Camera", .{})) {
-                self.engine.camera.eye = .{ 0, 4.0, 40.0 };
-                self.engine.camera.lookAt = .{ 0, 0, 0 };
+                self.engine.camera.position = .{ 0, 4.0, 40.0 };
             }
         }
         zgui.end();

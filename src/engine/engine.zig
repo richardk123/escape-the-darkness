@@ -15,6 +15,7 @@ const Camera = @import("camera.zig").Camera;
 
 pub const Engine = struct {
     allocator: std.mem.Allocator,
+    window: *zglfw.Window,
     renderer: Renderer,
     meshes: *mesh.Meshes,
     mesh_instances: MeshInstances,
@@ -46,6 +47,7 @@ pub const Engine = struct {
 
         return Engine{
             .allocator = allocator,
+            .window = window,
             .renderer = renderer,
             .meshes = meshes,
             .vertex_buffer = vertex_buffer,

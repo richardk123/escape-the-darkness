@@ -6,6 +6,7 @@ const window_title = "Escape the darkness";
 const Meshes = @import("engine/mesh.zig").Meshes;
 const Engine = @import("engine/engine.zig").Engine;
 const Grid = @import("engine/mesh/grid.zig").Grid;
+const FreeCamera = @import("utils/camera_free.zig").FreeCamera;
 
 const echolocation_shader = @embedFile("engine/shader/echolocation.wgsl");
 const debug_shader = @embedFile("engine/shader/debug.wgsl");
@@ -69,9 +70,12 @@ pub fn main() !void {
     var grid = engine.addMeshInstance(&debug_material, grid_mesh);
     grid.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
+    var free_camera = FreeCamera.init(&engine);
+
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
         gui.update();
+        free_camera.update();
         engine.renderer.beginFrame();
         try engine.draw();
         try gui.draw();
