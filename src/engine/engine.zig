@@ -68,24 +68,20 @@ pub const Engine = struct {
         return Material(mesh.Vertex).init(gctx, self.instance_buffer, shader, .triangle_list);
     }
 
-    pub fn beginPass(self: *Engine) !void {
-        try self.renderer.beginPass();
-    }
-
-    pub fn endPass(self: *Engine) !void {
-        try self.renderer.endPass();
-    }
-
-    // todo:
     pub fn draw(self: *Engine) !void {
         const gctx = self.renderer.gctx;
-        try self.renderer.beginPass();
+        const pass = try self.renderer.createPass();
+        defer {
+            pass.end();
+            pass.release();
+        }
 
+        // write instance buffer
         self.mesh_instances.writeBuffer(&self.instance_buffer);
 
+        // render each instance
         for (self.mesh_instances.mesh_instances.items) |mi| {
             pass: {
-                const pass = self.renderer.pass orelse break :pass;
                 const material = mi.material;
                 const mesh_index = mi.mesh_index;
                 const vb_info = gctx.lookupResourceInfo(self.vertex_buffer.gpu_buffer) orelse break :pass;
@@ -111,7 +107,6 @@ pub const Engine = struct {
                 );
             }
         }
-        try self.renderer.endPass();
     }
 
     pub fn deinit(self: *Engine) void {

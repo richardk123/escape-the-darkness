@@ -8,8 +8,7 @@ pub const Renderer = struct {
     gctx: *zgpu.GraphicsContext,
     depth_texture: zgpu.TextureHandle,
     depth_texture_view: zgpu.TextureViewHandle,
-    encoder: ?wgpu.CommandEncoder = null,
-    pass: ?wgpu.RenderPassEncoder = null,
+    encoder: wgpu.CommandEncoder,
 
     pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window) !Renderer {
         const gctx = try zgpu.GraphicsContext.create(
@@ -30,15 +29,17 @@ pub const Renderer = struct {
         errdefer gctx.destroy(allocator);
 
         const depth_texture_data = createDepthTexture(gctx);
+        const encoder = gctx.device.createCommandEncoder(null);
         return Renderer{
             .allocator = allocator,
             .gctx = gctx,
             .depth_texture = depth_texture_data.texture,
             .depth_texture_view = depth_texture_data.view,
+            .encoder = encoder,
         };
     }
 
-    pub fn beginPass(self: *Renderer) !void {
+    pub fn createPass(self: *Renderer) !wgpu.RenderPassEncoder {
         const gctx = self.gctx;
 
         const depth_view = gctx.lookupResource(self.depth_texture_view) orelse return error.DepthViewNotExist;
@@ -61,37 +62,27 @@ pub const Renderer = struct {
             .depth_stencil_attachment = &depth_attachment,
         };
 
-        const encoder = gctx.device.createCommandEncoder(null);
-        const pass = encoder.beginRenderPass(render_pass_info);
-        self.encoder = encoder;
-        self.pass = pass;
+        return self.encoder.beginRenderPass(render_pass_info);
     }
 
-    pub fn endPass(self: *Renderer) !void {
+    pub fn beginFrame(self: *Renderer) void {
+        self.encoder = self.gctx.device.createCommandEncoder(null);
+    }
+
+    pub fn finishFrame(self: *Renderer) void {
         const gctx = self.gctx;
 
         const back_buffer_view = gctx.swapchain.getCurrentTextureView();
         back_buffer_view.release();
 
-        if (self.pass) |pass| {
-            pass.end();
-            pass.release();
-        } else {
-            return error.PassDoesNotExist;
+        const commands = self.encoder.finish(null);
+        gctx.submit(&.{commands});
+
+        if (gctx.present() == .swap_chain_resized) {
+            self.updateDepthTexture();
         }
 
-        if (self.encoder) |encoder| {
-            const commands = encoder.finish(null);
-            gctx.submit(&.{commands});
-
-            if (gctx.present() == .swap_chain_resized) {
-                self.updateDepthTexture();
-            }
-
-            encoder.release();
-        } else {
-            return error.EncoderDoesNotExist;
-        }
+        self.encoder.release();
     }
 
     pub fn deinit(self: *Renderer) void {

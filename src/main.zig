@@ -45,6 +45,9 @@ pub fn main() !void {
     var engine = try Engine.init(allocator, window, &meshes);
     defer engine.deinit();
 
+    var gui = GUI.init(allocator, window, &engine);
+    defer gui.deinit();
+
     const echolocation_material = engine.createMaterial(echolocation_shader);
     const debug_material = engine.createMaterialDebug(debug_shader);
 
@@ -68,8 +71,10 @@ pub fn main() !void {
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
-        // try engine.beginPass();
+        gui.update();
+        engine.renderer.beginFrame();
         try engine.draw();
-        // try engine.endPass();
+        try gui.draw();
+        engine.renderer.finishFrame();
     }
 }
