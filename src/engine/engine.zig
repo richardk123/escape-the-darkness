@@ -6,12 +6,12 @@ const wgpu = zgpu.wgpu;
 const Renderer = @import("common/renderer.zig").Renderer;
 const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
 const Material = @import("material.zig").Material;
-const Camera = @import("camera.zig");
 const mesh = @import("mesh.zig");
 const MeshInstances = @import("mesh_instance.zig").MeshInstances;
 const MeshInstance = @import("mesh_instance.zig").MeshInstance;
 const Instance = @import("mesh_instance.zig").Instance;
 const Constants = @import("constants.zig");
+const Camera = @import("camera.zig").Camera;
 
 pub const Engine = struct {
     allocator: std.mem.Allocator,
@@ -21,6 +21,7 @@ pub const Engine = struct {
     vertex_buffer: GPUBuffer(mesh.Vertex),
     index_buffer: GPUBuffer(u32),
     instance_buffer: GPUBuffer(Instance),
+    camera: Camera,
 
     pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, meshes: *mesh.Meshes) !Engine {
         const renderer = try Renderer.init(allocator, window);
@@ -51,6 +52,7 @@ pub const Engine = struct {
             .index_buffer = index_buffer,
             .instance_buffer = instances_buffer,
             .mesh_instances = mesh_instances,
+            .camera = Camera.init(gctx),
         };
     }
 
@@ -76,6 +78,9 @@ pub const Engine = struct {
             pass.release();
         }
 
+        // write camera buffer
+        const camera_mem_offset = self.camera.writeBuffer();
+
         // write instance buffer
         self.mesh_instances.writeBuffer(&self.instance_buffer);
 
@@ -93,9 +98,8 @@ pub const Engine = struct {
                 pass.setIndexBuffer(ib_info.gpuobj.?, .uint32, 0, ib_info.size);
                 pass.setPipeline(pipeline);
 
-                const memOffset = Camera.calculateCamera(gctx);
                 const instance_count = @as(u32, @intCast(mi.instances.items.len));
-                pass.setBindGroup(0, bind_group, &.{memOffset});
+                pass.setBindGroup(0, bind_group, &.{camera_mem_offset});
 
                 const instance_offset = @as(u32, @intCast(mi.offset));
                 pass.drawIndexed(

@@ -10,8 +10,6 @@ const Engine = @import("engine/engine.zig").Engine;
 
 pub const GUI = struct {
     engine: *Engine,
-    drag1: f32,
-    drag2: f32,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -37,8 +35,6 @@ pub const GUI = struct {
         zgui.getStyle().scaleAllSizes(scale_factor);
         return GUI{
             .engine = engine,
-            .drag1 = 0.0,
-            .drag2 = 0.0,
         };
     }
 
@@ -53,23 +49,38 @@ pub const GUI = struct {
         zgui.setNextWindowPos(.{ .x = 0.0, .y = 0.0 });
         zgui.setNextWindowSize(.{ .w = 800.0, .h = window_height });
 
-        zgui.bulletText("W, A, S, D :  move camera", .{});
-        zgui.spacing();
+        if (zgui.begin("Camera Controls", .{ .flags = .{} })) {
+            zgui.bulletText("W, A, S, D :  move camera", .{});
+            zgui.spacing();
 
-        zgui.text("FPS: {d:.0}", .{zgui.io.getFramerate()});
-        zgui.text("Mouse Pos: {d:.0} {d:.0}", .{ zgui.getMousePos()[0], zgui.getMousePos()[1] });
+            zgui.text("FPS: {d:.0}", .{zgui.io.getFramerate()});
+            zgui.text("Mouse Pos: {d:.0} {d:.0}", .{ zgui.getMousePos()[0], zgui.getMousePos()[1] });
 
-        if (zgui.button("Setup Scene", .{})) {
-            // Button pressed.
+            zgui.separator();
+
+            // Camera Eye Position
+            if (zgui.collapsingHeader("Camera Position", .{})) {
+                _ = zgui.dragFloat("X##eye", .{ .v = &self.engine.camera.eye[0], .speed = 0.1 });
+                _ = zgui.dragFloat("Y##eye", .{ .v = &self.engine.camera.eye[1], .speed = 0.1 });
+                _ = zgui.dragFloat("Z##eye", .{ .v = &self.engine.camera.eye[2], .speed = 0.1 });
+            }
+
+            // Camera Look At Position
+            if (zgui.collapsingHeader("Look At Target", .{})) {
+                _ = zgui.dragFloat("X##look", .{ .v = &self.engine.camera.lookAt[0], .speed = 0.1 });
+                _ = zgui.dragFloat("Y##look", .{ .v = &self.engine.camera.lookAt[1], .speed = 0.1 });
+                _ = zgui.dragFloat("Z##look", .{ .v = &self.engine.camera.lookAt[2], .speed = 0.1 });
+            }
+
+            zgui.separator();
+
+            // Reset Camera Button
+            if (zgui.button("Reset Camera", .{})) {
+                self.engine.camera.eye = .{ 0, 4.0, 40.0 };
+                self.engine.camera.lookAt = .{ 0, 0, 0 };
+            }
         }
-
-        if (zgui.dragFloat("Drag 1", .{ .v = &self.drag1 })) {
-            // value0 has changed
-        }
-
-        if (zgui.dragFloat("Drag 2", .{ .v = &self.drag2, .min = -1.0, .max = 1.0 })) {
-            // value1 has changed
-        }
+        zgui.end();
     }
 
     pub fn draw(self: *GUI) !void {
