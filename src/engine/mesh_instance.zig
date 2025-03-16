@@ -23,9 +23,13 @@ pub const MeshInstances = struct {
         return MeshInstances{ .mesh_instances = mesh_instances, .allocator = allocator };
     }
 
-    pub fn add(self: *MeshInstances, material: *const Material(Vertex), mesh_index: usize) !*MeshInstance {
-        const mi = try MeshInstance.init(self.allocator, material, mesh_index);
-        try self.mesh_instances.append(mi);
+    pub fn add(self: *MeshInstances, material: *const Material(Vertex), mesh_index: usize) *MeshInstance {
+        const mi = MeshInstance.init(self.allocator, material, mesh_index) catch |err| {
+            std.debug.panic("Failed to create mesh instance: {s}", .{@errorName(err)});
+        };
+        self.mesh_instances.append(mi) catch |err| {
+            std.debug.panic("Failed to add mesh instance: {s}", .{@errorName(err)});
+        };
         return &self.mesh_instances.items[self.mesh_instances.items.len - 1];
     }
 
@@ -62,7 +66,10 @@ pub const MeshInstance = struct {
     }
 
     pub fn addInstance(self: *MeshInstance, instance: Instance) void {
-        self.instances.appendAssumeCapacity(instance);
+        self.instances.append(instance) catch |err| {
+            std.debug.print("Failed to add instance: {}\n", .{err});
+            return;
+        };
     }
 
     pub fn deinit(self: *const MeshInstance) void {

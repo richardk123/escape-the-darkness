@@ -54,7 +54,7 @@ pub const Engine = struct {
         };
     }
 
-    pub fn addMeshInstance(self: *Engine, material: *const Material(mesh.Vertex), mesh_index: usize) !*MeshInstance {
+    pub fn addMeshInstance(self: *Engine, material: *const Material(mesh.Vertex), mesh_index: usize) *MeshInstance {
         return self.mesh_instances.add(material, mesh_index);
     }
 

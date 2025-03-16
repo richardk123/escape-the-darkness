@@ -40,7 +40,6 @@ pub fn main() !void {
 
     const grid_data = try Grid.init(allocator, 100, 1.0);
     defer grid_data.deinit();
-
     const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
 
     var engine = try Engine.init(allocator, window, &meshes);
@@ -49,22 +48,22 @@ pub fn main() !void {
     const echolocation_material = engine.createMaterial(echolocation_shader);
     const debug_material = engine.createMaterialDebug(debug_shader);
 
-    var monkey = try engine.addMeshInstance(&echolocation_material, monkey_mesh);
+    var monkey = engine.addMeshInstance(&echolocation_material, monkey_mesh);
     monkey.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
     monkey.addInstance(.{ .position = .{ 10.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-    monkey.addInstance(.{ .position = .{ 20.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    monkey.addInstance(.{ .position = .{ 20.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0.7071, 0.7071 }, .scale = .{ 1, 1, 1 } });
 
-    var cube = try engine.addMeshInstance(&echolocation_material, cube_mesh);
+    var cube = engine.addMeshInstance(&echolocation_material, cube_mesh);
     cube.addInstance(.{ .position = .{ 0.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
     cube.addInstance(.{ .position = .{ 10.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
     cube.addInstance(.{ .position = .{ 20.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
-    var torus = try engine.addMeshInstance(&echolocation_material, torus_mesh);
+    var torus = engine.addMeshInstance(&echolocation_material, torus_mesh);
     torus.addInstance(.{ .position = .{ 0.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
     torus.addInstance(.{ .position = .{ 10.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 0.75, 0.75, 0.75 } });
     torus.addInstance(.{ .position = .{ 20.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 0.5, 0.5, 0.5 } });
 
-    var grid = try engine.addMeshInstance(&debug_material, grid_mesh);
+    var grid = engine.addMeshInstance(&debug_material, grid_mesh);
     grid.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {

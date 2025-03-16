@@ -4,6 +4,10 @@
 [x] Prepare buffer wrapper
 [x] Setup zed with newest zsl
 [x] Support dynamic mesh
-[ ] Support multiple instances
+[x] Support multiple instances
+[ ] Improve error handling
 [ ] Support gui
 [ ] Support camera movement
+[ ] Support playing simple sound
+[ ] Load sounds to GPU buffer, current sounds state to uniform buffers
+[ ] Visualise sounds on fragment shader
