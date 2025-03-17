@@ -10,7 +10,7 @@ const mesh = @import("mesh.zig");
 const MeshInstances = @import("mesh_instance.zig").MeshInstances;
 const MeshInstance = @import("mesh_instance.zig").MeshInstance;
 const Instance = @import("mesh_instance.zig").Instance;
-const Constants = @import("constants.zig");
+const Constants = @import("../constants.zig");
 const Camera = @import("camera.zig").Camera;
 
 pub const Engine = struct {

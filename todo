@@ -5,9 +5,9 @@
 [x] Setup zed with newest zsl
 [x] Support dynamic mesh
 [x] Support multiple instances
-[ ] Improve error handling
-[ ] Support gui
-[ ] Support camera movement
+[x] Improve error handling
+[x] Support gui
+[x] Support camera movement
 [ ] Support playing simple sound
 [ ] Load sounds to GPU buffer, current sounds state to uniform buffers
 [ ] Visualise sounds on fragment shader

@@ -42,6 +42,10 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("zgpu", zgpu.module("root"));
     exe.linkLibrary(zgpu.artifact("zdawn"));
 
+    const zaudio = b.dependency("zaudio", .{});
+    exe.root_module.addImport("zaudio", zaudio.module("root"));
+    exe.linkLibrary(zaudio.artifact("miniaudio"));
+
     const zgui = b.dependency("zgui", .{
         .target = target,
         .backend = .glfw_wgpu,

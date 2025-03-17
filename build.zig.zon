@@ -14,6 +14,10 @@
             .url = "https://github.com/zig-gamedev/zgpu/archive/bc10f874cf9c93e347c1298efba87be4f001fc9d.tar.gz",
             .hash = "122020a116e18cad9f4ea905ca63a1505a47d680feb6edc9ebcf34795bf338f5868b",
         },
+        .zaudio = .{
+            .url = "https://github.com/zig-gamedev/zaudio/archive/1d55b813e090271d2774a7637ec3c077a2847c43.tar.gz",
+            .hash = "1220b4c7d7a2e6f0ac3a6bf5cd52d2adf73b18d131c9290290f7fb380d54ad12ee61",
+        },
         // Zig build package and bindings for Dear Imgui & extras.
         .zgui = .{
             .url = "https://github.com/zig-gamedev/zgui/archive/655a123f5da273f5e745d587d42ac652b3ca441e.tar.gz",

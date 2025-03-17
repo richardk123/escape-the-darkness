@@ -4,7 +4,7 @@ const zgpu = @import("zgpu");
 const Material = @import("material.zig").Material;
 const Vertex = @import("mesh.zig").Vertex;
 const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
-const Constants = @import("constants.zig");
+const Constants = @import("../constants.zig");
 
 pub const Instance = struct {
     position: [3]f32,

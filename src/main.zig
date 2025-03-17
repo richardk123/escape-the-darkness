@@ -7,6 +7,9 @@ const Meshes = @import("engine/mesh.zig").Meshes;
 const Engine = @import("engine/engine.zig").Engine;
 const Grid = @import("engine/mesh/grid.zig").Grid;
 const FreeCamera = @import("utils/camera_free.zig").FreeCamera;
+const SoundManager = @import("sound/sound_manager.zig").SoundManager;
+const SoundFile = @import("sound/sound_manager.zig").SoundFile;
+const SoundData = @import("sound/sound_manager.zig").SoundData;
 
 const echolocation_shader = @embedFile("engine/shader/echolocation.wgsl");
 const debug_shader = @embedFile("engine/shader/debug.wgsl");
@@ -35,19 +38,24 @@ pub fn main() !void {
     var meshes = try Meshes.init(allocator);
     defer meshes.deinit();
 
-    const monkey_mesh = try meshes.loadMesh("monkey.gltf");
-    const cube_mesh = try meshes.loadMesh("cube.gltf");
-    const torus_mesh = try meshes.loadMesh("torus.gltf");
-
     const grid_data = try Grid.init(allocator, 100, 1.0);
     defer grid_data.deinit();
     const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
+
+    const monkey_mesh = try meshes.loadMesh("monkey.gltf");
+    const cube_mesh = try meshes.loadMesh("cube.gltf");
+    const torus_mesh = try meshes.loadMesh("torus.gltf");
 
     var engine = try Engine.init(allocator, window, &meshes);
     defer engine.deinit();
 
     var gui = GUI.init(allocator, window, &engine);
     defer gui.deinit();
+
+    var sound_manager = try SoundManager.init(allocator);
+    defer sound_manager.deinit();
+
+    _ = try sound_manager.play(SoundFile.music, SoundData.init(.{ 0, 0, 0 }));
 
     const echolocation_material = engine.createMaterial(echolocation_shader);
     const debug_material = engine.createMaterialDebug(debug_shader);
@@ -76,6 +84,7 @@ pub fn main() !void {
         zglfw.pollEvents();
         gui.update();
         free_camera.update();
+        sound_manager.update();
         engine.renderer.beginFrame();
         try engine.draw();
         try gui.draw();
