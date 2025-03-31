@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        target: [x86_64-linux, x86_64-windows, x86_64-macos, aarch64-macos]
+        target: [x86_64-linux, x86_64-windows, aarch64-macos]
 
     steps:
       - name: Checkout code
