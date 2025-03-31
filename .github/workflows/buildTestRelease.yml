@@ -3,19 +3,28 @@ name: Build Test Release
 on:
   push:
     branches:
-      - main # Trigger on pushes to the 'main' branch (or change to your main branch name)
+      - main
   pull_request:
     branches:
       - main
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest # Use Ubuntu as the base runner
-    name: Build and Test
+    name: Build and Test (${{ matrix.os }})
 
     strategy:
       matrix:
-        target: [x86_64-linux, x86_64-windows, aarch64-macos]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-linux
+          - os: windows-latest
+            target: x86_64-windows
+          - os: macos-latest
+            target: x86_64-macos
+          - os: macos-latest
+            target: aarch64-macos
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -29,37 +38,43 @@ jobs:
 
       - name: Build and Test
         run: |
-          export ZIG_TARGET="${{ matrix.target }}"
-          zig build test --verbose  #Added verbose to show build progress
+          zig build test --verbose
           zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
 
       - name: Package Artifacts
         run: |
           mkdir -p escape-the-darkness
           cp -r zig-out/bin/* escape-the-darkness/
-          zip -r ${{ matrix.target }}-artifact.zip escape-the-darkness
 
-      - name: Upload Artifacts (Optional)
+          # Use 7z on Windows, zip on Unix
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            7z a ${{ matrix.target }}-artifact.zip ./escape-the-darkness/*
+          else
+            zip -r ${{ matrix.target }}-artifact.zip escape-the-darkness
+          fi
+        shell: bash
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-artifact
           path: ${{ matrix.target }}-artifact.zip
 
-  #Optional job to upload releases to github
   release:
     needs: build-test
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Download builds for
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts/
 
-      - name: List downloaded files (Debugging)
+      - name: List downloaded files
         run: ls -R artifacts/
 
       - name: Release
