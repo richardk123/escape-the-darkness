@@ -37,6 +37,7 @@ jobs:
       - name: Build and Test
         run: |
           zig build test --verbose
+          # For macOS runners, explicitly set the architecture target
           zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSmall --summary all
 
       - name: Package Artifacts
@@ -83,5 +84,4 @@ jobs:
           files: |
             artifacts/x86_64-linux-artifact/x86_64-linux-artifact.zip
             artifacts/x86_64-windows-artifact/x86_64-windows-artifact.zip
-            artifacts/x86_64-macos-artifact/x86_64-macos-artifact.zip
             artifacts/aarch64-macos-artifact/aarch64-macos-artifact.zip
