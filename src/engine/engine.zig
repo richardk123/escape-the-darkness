@@ -12,6 +12,7 @@ const MeshInstance = @import("mesh_instance.zig").MeshInstance;
 const Instance = @import("mesh_instance.zig").Instance;
 const Constants = @import("../constants.zig");
 const Camera = @import("camera.zig").Camera;
+const sm = @import("sound/sound_manager2.zig");
 
 pub const Engine = struct {
     allocator: std.mem.Allocator,
@@ -23,6 +24,7 @@ pub const Engine = struct {
     index_buffer: GPUBuffer(u32),
     instance_buffer: GPUBuffer(Instance),
     camera: Camera,
+    sound_manager: sm.SoundManager,
 
     pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, meshes: *mesh.Meshes) !Engine {
         const renderer = try Renderer.init(allocator, window);
@@ -55,6 +57,7 @@ pub const Engine = struct {
             .instance_buffer = instances_buffer,
             .mesh_instances = mesh_instances,
             .camera = Camera.init(gctx),
+            .sound_manager = try sm.SoundManager.init(allocator),
         };
     }
 
@@ -118,5 +121,6 @@ pub const Engine = struct {
     pub fn deinit(self: *Engine) void {
         self.renderer.deinit();
         self.mesh_instances.deinit();
+        self.sound_manager.deinit();
     }
 };

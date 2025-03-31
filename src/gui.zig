@@ -50,22 +50,57 @@ pub const GUI = struct {
         zgui.setNextWindowSize(.{ .w = 800.0, .h = window_height });
 
         if (zgui.begin("Camera Controls", .{ .flags = .{} })) {
+            // Controls section
             zgui.bulletText("W, A, S, D :  move camera", .{});
             zgui.spacing();
+            zgui.spacing();
 
+            // FPS and mouse info
             zgui.text("FPS: {d:.0}", .{zgui.io.getFramerate()});
             zgui.text("Mouse Pos: {d:.0} {d:.0}", .{ zgui.getMousePos()[0], zgui.getMousePos()[1] });
-
+            zgui.spacing();
             zgui.separator();
+            zgui.spacing();
 
             // Camera Eye Position
-            if (zgui.collapsingHeader("Camera Position", .{})) {
+            if (zgui.collapsingHeader("Camera Position", .{ .default_open = true })) {
+                zgui.spacing();
+                zgui.indent(.{ .indent_w = 20 });
                 _ = zgui.dragFloat("X##eye", .{ .v = &self.engine.camera.position[0], .speed = 0.1 });
                 _ = zgui.dragFloat("Y##eye", .{ .v = &self.engine.camera.position[1], .speed = 0.1 });
                 _ = zgui.dragFloat("Z##eye", .{ .v = &self.engine.camera.position[2], .speed = 0.1 });
+                zgui.unindent(.{ .indent_w = 20 });
+                zgui.spacing();
             }
 
+            zgui.spacing();
             zgui.separator();
+            zgui.spacing();
+
+            // Add sound controls section
+            if (zgui.collapsingHeader("Sound Controls", .{ .default_open = true })) {
+                zgui.spacing();
+                zgui.indent(.{ .indent_w = 20 });
+                // Play rumble sound button
+                if (zgui.button("Play Rumble Sound", .{})) {
+                    _ = self.engine.sound_manager.play(.rumble) catch |err| {
+                        std.debug.print("Failed to play rumble sound: {}\n", .{err});
+                    };
+                }
+
+                // Play music button
+                if (zgui.button("Play Music", .{})) {
+                    _ = self.engine.sound_manager.play(.music) catch |err| {
+                        std.debug.print("Failed to play music: {}\n", .{err});
+                    };
+                }
+                zgui.unindent(.{ .indent_w = 20 });
+                zgui.spacing();
+            }
+
+            zgui.spacing();
+            zgui.separator();
+            zgui.spacing();
 
             // Reset Camera Button
             if (zgui.button("Reset Camera", .{})) {

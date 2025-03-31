@@ -8,6 +8,11 @@
 [x] Improve error handling
 [x] Support gui
 [x] Support camera movement
-[ ] Support playing simple sound
-[ ] Load sounds to GPU buffer, current sounds state to uniform buffers
-[ ] Visualise sounds on fragment shader
+[x] Support playing simple sound
+[ ] Create wav parser, transform the data to u8|u16 mono source,
+[ ] Create SoundManager, track playing sounds, auto deinit them after they finish
+[ ] Push all sounds data to GPU storage buffer (once), current playing sounds state to uniform buffer(every frame)
+[ ] Create compute shader that use current playing state from uniform buffer to write to !!!storage texture + clear storage texture with another compute shader
+[ ] use encoder.copyTextureToTexture(storageTexture, sampledTexture) so it can be used in fragment shader
+[ ] create quad and display the texture to debug the data
+[ ] Visualise sounds on fragment shader using the sounds data texture (texture has faster random access then storage buffer)

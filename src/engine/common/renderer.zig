@@ -28,8 +28,33 @@ pub const Renderer = struct {
         );
         errdefer gctx.destroy(allocator);
 
+        const monitor = zglfw.getPrimaryMonitor() orelse return error.NoPrimaryMonitor;
+        const video_mode = try zglfw.getVideoMode(monitor);
+        std.debug.print("\n============= Monitor ============\n", .{});
+        std.debug.print("Width: {} px\n", .{video_mode.width});
+        std.debug.print("Height: {} px\n", .{video_mode.height});
+        std.debug.print("Red: {} bits\n", .{video_mode.red_bits});
+        std.debug.print("Green: {} bits\n", .{video_mode.green_bits});
+        std.debug.print("Blue: {} bits\n", .{video_mode.blue_bits});
+        std.debug.print("Refresh rate: {} Hz\n", .{video_mode.refresh_rate});
+
         const depth_texture_data = createDepthTexture(gctx);
         const encoder = gctx.device.createCommandEncoder(null);
+
+        var limits: wgpu.SupportedLimits = .{};
+        const success = gctx.device.getLimits(&limits);
+
+        if (success) {
+            std.debug.print("\n============= DEVICE LIMITS ============\n", .{});
+            inline for (std.meta.fields(wgpu.Limits)) |field| {
+                const value = @field(limits.limits, field.name);
+                std.debug.print("{s}: {d}\n", .{ field.name, value });
+            }
+            std.debug.print("========================================\n", .{});
+        } else {
+            std.debug.print("Failed to get device limits\n\n", .{});
+        }
+
         return Renderer{
             .allocator = allocator,
             .gctx = gctx,

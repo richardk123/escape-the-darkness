@@ -7,9 +7,6 @@ const Meshes = @import("engine/mesh.zig").Meshes;
 const Engine = @import("engine/engine.zig").Engine;
 const Grid = @import("engine/mesh/grid.zig").Grid;
 const FreeCamera = @import("utils/camera_free.zig").FreeCamera;
-const SoundManager = @import("sound/sound_manager.zig").SoundManager;
-const SoundFile = @import("sound/sound_manager.zig").SoundFile;
-const SoundData = @import("sound/sound_manager.zig").SoundData;
 
 const echolocation_shader = @embedFile("engine/shader/echolocation.wgsl");
 const debug_shader = @embedFile("engine/shader/debug.wgsl");
@@ -52,11 +49,6 @@ pub fn main() !void {
     var gui = GUI.init(allocator, window, &engine);
     defer gui.deinit();
 
-    var sound_manager = try SoundManager.init(allocator);
-    defer sound_manager.deinit();
-
-    _ = try sound_manager.play(SoundFile.music, SoundData.init(.{ 0, 0, 0 }));
-
     const echolocation_material = engine.createMaterial(echolocation_shader);
     const debug_material = engine.createMaterialDebug(debug_shader);
 
@@ -84,7 +76,7 @@ pub fn main() !void {
         zglfw.pollEvents();
         gui.update();
         free_camera.update();
-        sound_manager.update();
+        // sound_manager.update();
         engine.renderer.beginFrame();
         try engine.draw();
         try gui.draw();
