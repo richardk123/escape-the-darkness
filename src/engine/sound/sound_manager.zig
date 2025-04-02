@@ -44,6 +44,13 @@ pub const SoundDatas = struct {
             offset += size;
         }
 
+        // Add padding bytes to ensure total size is a multiple of 4
+        const remainder = all_sound_data.items.len % 4;
+        if (remainder != 0) {
+            const padding_bytes = 4 - remainder;
+            try all_sound_data.appendNTimes(0, padding_bytes);
+        }
+
         return SoundDatas{
             .all_sound_data = all_sound_data,
             .sounds = sounds,
@@ -175,7 +182,8 @@ pub const SoundManager = struct {
                 self.uniform.count -= 1;
                 _ = self.instances.swapRemove(i);
             } else {
-                if (instance.instance_data_index < self.uniform.count - 1) {
+                // update pcr_frame
+                if (instance.instance_data_index < self.uniform.count) {
                     const pcr_frame: u64 = instance.sound.getCursorInPcmFrames() catch 0;
                     const frame = @as(u32, @intCast(pcr_frame));
                     self.uniform.instances[instance.instance_data_index].current_frame = frame;

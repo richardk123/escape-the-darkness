@@ -40,8 +40,16 @@ pub const Engine = struct {
         const index_buffer = GPUBuffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, total_num_indices);
         index_buffer.write(meshes.indices.items);
 
+        const sound_manager = try sm.SoundManager.init(allocator);
+
+        // Create a sound buffer
+        const sounds_data = sound_manager.data.all_sound_data.items;
+        const sounds_data_count = @as(u32, @intCast(sounds_data.len));
+        const sounds_data_buffer = GPUBuffer(u8).init(gctx, .{ .copy_dst = true, .storage = true }, sounds_data_count);
+        sounds_data_buffer.write(sounds_data);
+
         // Create an instances buffer
-        const instances_buffer_usage: wgpu.BufferUsage = .{ .vertex = true, .storage = true, .copy_dst = true };
+        const instances_buffer_usage: wgpu.BufferUsage = .{ .copy_dst = true, .storage = true };
         const instances_buffer = GPUBuffer(Instance).init(gctx, instances_buffer_usage, Constants.MAX_INSTANCE_COUNT);
 
         // Create instances
@@ -57,7 +65,7 @@ pub const Engine = struct {
             .instance_buffer = instances_buffer,
             .mesh_instances = mesh_instances,
             .camera = Camera.init(gctx),
-            .sound_manager = try sm.SoundManager.init(allocator),
+            .sound_manager = sound_manager,
         };
     }
 
@@ -66,13 +74,11 @@ pub const Engine = struct {
     }
 
     pub fn createMaterialDebug(self: *Engine, shader: [*:0]const u8) Material(mesh.Vertex) {
-        const gctx = self.renderer.gctx;
-        return Material(mesh.Vertex).init(gctx, self.instance_buffer, shader, .line_list);
+        return Material(mesh.Vertex).init(self, shader, .line_list);
     }
 
     pub fn createMaterial(self: *Engine, shader: [*:0]const u8) Material(mesh.Vertex) {
-        const gctx = self.renderer.gctx;
-        return Material(mesh.Vertex).init(gctx, self.instance_buffer, shader, .triangle_list);
+        return Material(mesh.Vertex).init(self, shader, .triangle_list);
     }
 
     pub fn update(self: *Engine) !void {
