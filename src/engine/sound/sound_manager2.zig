@@ -19,6 +19,7 @@ pub const SoundFile = enum {
 pub const SoundData = struct {
     offset: u32,
     size: u32,
+    sound_file: SoundFile,
 };
 
 pub const SoundDatas = struct {
@@ -37,6 +38,7 @@ pub const SoundDatas = struct {
             try sounds.append(SoundData{
                 .size = size,
                 .offset = offset,
+                .sound_file = sound_file,
             });
             try all_sound_data.appendSlice(raw_data);
             offset += size;
@@ -48,6 +50,18 @@ pub const SoundDatas = struct {
         };
     }
 
+    pub fn findSoundData(self: SoundDatas, sound_file: SoundFile) SoundData {
+        for (self.sounds.items) |sound| {
+            if (sound.sound_file == sound_file) {
+                return sound;
+            }
+        }
+        var msg_buf: [128]u8 = undefined;
+        const msg = std.fmt.bufPrint(&msg_buf, "Sound data not found for sound file: {s}", .{@tagName(sound_file)}) catch "Sound data not found (couldn't format error message)";
+
+        @panic(msg);
+    }
+
     pub fn deinit(self: *SoundDatas) void {
         self.all_sound_data.deinit();
         self.sounds.deinit();
@@ -55,19 +69,28 @@ pub const SoundDatas = struct {
 };
 
 pub const SoundInstanceData = struct {
-    position: [3]f32,
-    offset: u32,
-    velocity: [3]f32,
-    size: u32,
-    current_frame: u32,
-    // padding
-    color: [3]f32,
+    offset: u32 = 0,
+    size: u32 = 0,
+    current_frame: u32 = 0,
+    _padding: u32 = 0,
 };
 
 pub const SoundUniform = struct {
-    instance_count: u32,
+    count: u32,
     _pad: [3]f32 = .{ 0, 0, 0 },
     instances: [Constants.MAX_SOUND_COUNT]SoundInstanceData,
+
+    pub fn init() SoundUniform {
+        var uniform = SoundUniform{
+            .count = 0,
+            .instances = undefined,
+        };
+        // Initialize all sound data entries
+        for (&uniform.instances) |*data| {
+            data.* = .{};
+        }
+        return uniform;
+    }
 };
 
 pub const SoundInstance = struct {
@@ -77,45 +100,96 @@ pub const SoundInstance = struct {
 };
 
 pub const SoundManager = struct {
-    sound_datas: SoundDatas,
+    data: SoundDatas,
     engine: *zaudio.Engine,
-    sound_instances: std.ArrayList(SoundInstance),
-    sound_id: usize = 0,
+    instances: std.ArrayList(SoundInstance),
+    next_id: usize = 0,
+    uniform: SoundUniform,
 
     pub fn init(allocator: std.mem.Allocator) !SoundManager {
         const sound_datas = try SoundDatas.init(allocator);
         zaudio.init(allocator);
         const engine = try zaudio.Engine.create(null);
         const sound_instances = std.ArrayList(SoundInstance).init(allocator);
+        const sound_uniform = SoundUniform.init();
 
         return SoundManager{
-            .sound_datas = sound_datas,
+            .data = sound_datas,
             .engine = engine,
-            .sound_instances = sound_instances,
+            .instances = sound_instances,
+            .uniform = sound_uniform,
         };
     }
 
-    pub fn play(self: *SoundManager, soundFile: SoundFile) !usize {
-        const sound = try self.engine.createSoundFromFile(soundFile.getPath(), .{ .flags = .{ .stream = true } });
-        std.debug.print("playing sound {s} \n", .{soundFile.getPath()});
+    pub fn play(self: *SoundManager, sound_file: SoundFile) !usize {
+        const sound = try self.engine.createSoundFromFile(sound_file.getPath(), .{ .flags = .{ .stream = true } });
+        std.debug.print("playing sound {s} \n", .{sound_file.getPath()});
         try sound.start();
 
-        self.sound_id += 1;
-        try self.sound_instances.append(SoundInstance{
-            .id = self.sound_id,
-            .instance_data_index = 0,
+        const sound_data = self.data.findSoundData(sound_file);
+
+        try self.instances.append(SoundInstance{
+            .id = self.next_id,
             .sound = sound,
+            .instance_data_index = self.instances.items.len,
         });
 
-        return self.sound_id;
+        self.next_id += 1;
+
+        if (self.instances.items.len <= Constants.MAX_SOUND_COUNT) {
+            var uniform_sound_data = &self.uniform.instances[self.instances.items.len - 1];
+            uniform_sound_data.size = sound_data.size;
+            uniform_sound_data.offset = sound_data.offset;
+            uniform_sound_data.current_frame = 0;
+            self.uniform.count += 1;
+        }
+
+        return self.next_id;
+    }
+
+    // Update loop - call this once per frame to cleanup finished sounds
+    pub fn update(self: *SoundManager) void {
+        // Iterate backwards to safely remove elements
+        var i: usize = self.instances.items.len;
+        while (i > 0) {
+            i -= 1;
+            const instance = self.instances.items[i];
+
+            if (!instance.sound.isPlaying()) {
+                // Sound is no longer playing, clean it up
+                instance.sound.destroy();
+
+                // If this wasn't the last active sound, move the last one to this spot
+                if (instance.instance_data_index < self.uniform.count - 1) {
+                    self.uniform.instances[instance.instance_data_index] = self.uniform.instances[self.uniform.count - 1];
+
+                    // Update the index of the sound instance that was moved
+                    for (self.instances.items) |*other_instance| {
+                        if (other_instance.instance_data_index == self.uniform.count - 1) {
+                            other_instance.instance_data_index = instance.instance_data_index;
+                            break;
+                        }
+                    }
+                }
+
+                self.uniform.count -= 1;
+                _ = self.instances.swapRemove(i);
+            } else {
+                if (instance.instance_data_index < self.uniform.count - 1) {
+                    const pcr_frame: u64 = instance.sound.getCursorInPcmFrames() catch 0;
+                    const frame = @as(u32, @intCast(pcr_frame));
+                    self.uniform.instances[instance.instance_data_index].current_frame = frame;
+                }
+            }
+        }
     }
 
     pub fn deinit(self: *SoundManager) void {
-        for (self.sound_instances.items) |instance| {
+        for (self.instances.items) |instance| {
             instance.sound.destroy();
         }
-        self.sound_datas.deinit();
-        self.sound_instances.deinit();
+        self.data.deinit();
+        self.instances.deinit();
         self.engine.destroy();
         zaudio.deinit();
     }

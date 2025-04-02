@@ -75,7 +75,12 @@ pub const Engine = struct {
         return Material(mesh.Vertex).init(gctx, self.instance_buffer, shader, .triangle_list);
     }
 
-    pub fn draw(self: *Engine) !void {
+    pub fn update(self: *Engine) !void {
+        self.sound_manager.update();
+        try self.draw();
+    }
+
+    fn draw(self: *Engine) !void {
         const gctx = self.renderer.gctx;
         const pass = try self.renderer.createPass();
         defer {

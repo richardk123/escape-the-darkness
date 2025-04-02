@@ -76,9 +76,8 @@ pub fn main() !void {
         zglfw.pollEvents();
         gui.update();
         free_camera.update();
-        // sound_manager.update();
         engine.renderer.beginFrame();
-        try engine.draw();
+        try engine.update();
         try gui.draw();
         engine.renderer.finishFrame();
     }

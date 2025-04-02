@@ -107,7 +107,48 @@ pub const GUI = struct {
                 self.engine.camera.position = .{ 0, 4.0, 40.0 };
             }
         }
+
+        self.renderSoundUniform();
+
         zgui.end();
+    }
+
+    fn renderSoundUniform(self: *GUI) void {
+        zgui.spacing();
+        zgui.separator();
+        zgui.spacing();
+
+        // Add SoundUniform information section
+        if (zgui.collapsingHeader("Sound Uniform Info", .{ .default_open = true })) {
+            zgui.spacing();
+            zgui.indent(.{ .indent_w = 20 });
+
+            // Display active sound count
+            zgui.text("Active Sounds: {d}", .{self.engine.sound_manager.uniform.count});
+
+            // Display information about each active sound instance
+            if (self.engine.sound_manager.uniform.count > 0) {
+                zgui.separator();
+                for (0..@min(self.engine.sound_manager.uniform.count, @as(u32, @intCast(self.engine.sound_manager.uniform.instances.len)))) |i| {
+                    const instance = self.engine.sound_manager.uniform.instances[i];
+
+                    zgui.text("Instance {d}:", .{i});
+                    zgui.sameLine(.{});
+                    zgui.text("Offset: {d}", .{instance.offset});
+                    zgui.sameLine(.{});
+                    zgui.text("Size: {d}", .{instance.size});
+                    zgui.sameLine(.{});
+                    zgui.text("Frame: {d}", .{instance.current_frame});
+
+                    if (i < self.engine.sound_manager.uniform.count - 1) {
+                        zgui.separator();
+                    }
+                }
+            }
+
+            zgui.unindent(.{ .indent_w = 20 });
+            zgui.spacing();
+        }
     }
 
     pub fn draw(self: *GUI) !void {
