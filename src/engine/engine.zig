@@ -12,7 +12,7 @@ const MeshInstance = @import("mesh_instance.zig").MeshInstance;
 const Instance = @import("mesh_instance.zig").Instance;
 const Constants = @import("../constants.zig");
 const Camera = @import("camera.zig").Camera;
-const sm = @import("sound/sound_manager2.zig");
+const sm = @import("sound/sound_manager.zig");
 
 pub const Engine = struct {
     allocator: std.mem.Allocator,

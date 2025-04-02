@@ -1,6 +1,7 @@
 const std = @import("std");
 const zaudio = @import("zaudio");
-const Constants = @import("../constants.zig");
+const Constants = @import("../../constants.zig");
+const WavDecoder = @import("wav_decoder.zig");
 
 // Define the enum of predefined sound files
 pub const SoundFile = enum {
@@ -9,187 +10,197 @@ pub const SoundFile = enum {
     // Returns the file path for each sound
     pub fn getPath(self: SoundFile) [:0]const u8 {
         return switch (self) {
-            .rumble => "content/sound/rumble.flac",
-            .music => "content/sound/music.mp3",
+            .rumble => "content/sound/sin.wav",
+            .music => "content/sound/sample.wav",
         };
     }
 };
 
-// Make SoundData aligned for GPU
-pub const SoundData = extern struct {
-    position: [3]f32,
-    // Add padding to ensure alignment
-    _pad1: f32 = 0.0,
-    velocity: [3]f32,
-    // Add padding to ensure alignment
-    _pad2: f32 = 0.0,
-    frame: u32 = 0,
-    // Add padding to ensure 16-byte alignment for the entire struct
-    _pad3: [3]f32 = .{ 0, 0, 0 },
+pub const SoundData = struct {
+    offset: u32,
+    size: u32,
+    sound_file: SoundFile,
+};
 
-    pub fn init(position: [3]f32) SoundData {
-        return SoundData{
-            .position = position,
-            .velocity = .{ 0, 0, 0 },
+pub const SoundDatas = struct {
+    all_sound_data: std.ArrayList(u8),
+    sounds: std.ArrayList(SoundData),
+
+    pub fn init(allocator: std.mem.Allocator) !SoundDatas {
+        var all_sound_data = std.ArrayList(u8).init(allocator);
+        var sounds = std.ArrayList(SoundData).init(allocator);
+
+        var offset: u32 = 0;
+        for (std.enums.values(SoundFile)) |sound_file| {
+            const raw_data = try WavDecoder.decodeWav(allocator, sound_file.getPath());
+            defer allocator.free(raw_data);
+            const size = @as(u32, @intCast(raw_data.len));
+            try sounds.append(SoundData{
+                .size = size,
+                .offset = offset,
+                .sound_file = sound_file,
+            });
+            try all_sound_data.appendSlice(raw_data);
+            offset += size;
+        }
+
+        return SoundDatas{
+            .all_sound_data = all_sound_data,
+            .sounds = sounds,
         };
     }
 
-    pub fn updatePosition(self: *SoundData, position: [3]f32) void {
-        self.velocity = .{ self.position[0] - position[0], self.position[1] - position[1], self.position[2] - position[2] };
-        self.position = position;
+    pub fn findSoundData(self: SoundDatas, sound_file: SoundFile) SoundData {
+        for (self.sounds.items) |sound| {
+            if (sound.sound_file == sound_file) {
+                return sound;
+            }
+        }
+        var msg_buf: [128]u8 = undefined;
+        const msg = std.fmt.bufPrint(&msg_buf, "Sound data not found for sound file: {s}", .{@tagName(sound_file)}) catch "Sound data not found (couldn't format error message)";
+
+        @panic(msg);
+    }
+
+    pub fn deinit(self: *SoundDatas) void {
+        self.all_sound_data.deinit();
+        self.sounds.deinit();
     }
 };
 
-// Complete uniform buffer structure with count and fixed array
-pub const SoundUniform = extern struct {
+pub const SoundInstanceData = struct {
+    offset: u32 = 0,
+    size: u32 = 0,
+    current_frame: u32 = 0,
+    _padding: u32 = 0,
+};
+
+pub const SoundUniform = struct {
     count: u32,
-    _pad: [3]u32 = .{ 0, 0, 0 }, // Padding for alignment
-    data: [Constants.MAX_SOUND_COUNT]SoundData,
+    _pad: [3]f32 = .{ 0, 0, 0 },
+    instances: [Constants.MAX_SOUND_COUNT]SoundInstanceData,
 
     pub fn init() SoundUniform {
         var uniform = SoundUniform{
             .count = 0,
-            .data = undefined,
+            .instances = undefined,
         };
         // Initialize all sound data entries
-        for (&uniform.data) |*data| {
-            data.* = SoundData.init(.{ 0, 0, 0 });
+        for (&uniform.instances) |*data| {
+            data.* = .{};
         }
         return uniform;
     }
 };
 
-// Verify alignment
-comptime {
-    if (@sizeOf(SoundData) % 16 != 0) {
-        @compileError("SoundData must be 16-byte aligned for WebGPU. Current size: " ++ std.fmt.comptimePrint("{}", .{@sizeOf(SoundData)}));
-    }
-    if (@sizeOf(SoundUniform) % 16 != 0) {
-        @compileError("SoundUniform must be 16-byte aligned for WebGPU. Current size: " ++ std.fmt.comptimePrint("{}", .{@sizeOf(SoundUniform)}));
-    }
-}
-
 pub const SoundInstance = struct {
     sound: *zaudio.Sound,
-    data_index: usize, // Index into the SoundData array
+    instance_data_index: usize,
     id: usize,
 };
 
 pub const SoundManager = struct {
-    allocator: std.mem.Allocator,
+    data: SoundDatas,
     engine: *zaudio.Engine,
-    sound_instances: std.ArrayList(SoundInstance),
+    instances: std.ArrayList(SoundInstance),
+    next_id: usize = 0,
     uniform: SoundUniform,
-    next_sound_id: usize,
 
     pub fn init(allocator: std.mem.Allocator) !SoundManager {
+        const sound_datas = try SoundDatas.init(allocator);
         zaudio.init(allocator);
         const engine = try zaudio.Engine.create(null);
-        const sound_instances = try std.ArrayList(SoundInstance).initCapacity(allocator, Constants.MAX_SOUND_COUNT);
+        const sound_instances = std.ArrayList(SoundInstance).init(allocator);
+        const sound_uniform = SoundUniform.init();
 
         return SoundManager{
-            .allocator = allocator,
+            .data = sound_datas,
             .engine = engine,
-            .sound_instances = sound_instances,
-            .uniform = SoundUniform.init(),
-            .next_sound_id = 0,
+            .instances = sound_instances,
+            .uniform = sound_uniform,
         };
     }
 
-    // Play sound and return a handle (ID) to update it later
-    pub fn play(self: *SoundManager, file: SoundFile, initial_data: SoundData) !usize {
-        if (self.uniform.count >= Constants.MAX_SOUND_COUNT) {
-            return error.TooManySounds;
-        }
+    pub fn play(self: *SoundManager, sound_file: SoundFile) !usize {
+        const sound = try self.engine.createSoundFromFile(sound_file.getPath(), .{ .flags = .{ .stream = true } });
+        std.debug.print("playing sound {s} \n", .{sound_file.getPath()});
+        try sound.start();
 
-        var sound = try self.engine.createSoundFromFile(
-            file.getPath(),
-            .{ .flags = .{ .stream = true } },
-        );
+        const sound_data = self.data.findSoundData(sound_file);
 
-        // Set initial position
-        sound.setPosition(initial_data.position);
-
-        // Create sound instance with unique ID
-        const sound_id = self.next_sound_id;
-        self.next_sound_id += 1;
-
-        // Add to sound data array
-        const data_index = self.uniform.count;
-        self.uniform.data[data_index] = initial_data;
-        self.uniform.count += 1;
-
-        try self.sound_instances.append(SoundInstance{
+        try self.instances.append(SoundInstance{
+            .id = self.next_id,
             .sound = sound,
-            .data_index = data_index,
-            .id = sound_id,
+            .instance_data_index = self.instances.items.len,
         });
 
-        try sound.start();
-        return sound_id;
-    }
+        self.next_id += 1;
 
-    // Update position for a specific sound
-    pub fn updatePosition(self: *SoundManager, sound_id: usize, new_position: [3]f32) bool {
-        for (self.sound_instances.items) |*instance| {
-            if (instance.id == sound_id) {
-                self.uniform.data[instance.data_index].updatePosition(new_position);
-                instance.sound.setPosition(new_position);
-                return true;
-            }
+        if (self.instances.items.len <= Constants.MAX_SOUND_COUNT) {
+            var uniform_sound_data = &self.uniform.instances[self.instances.items.len - 1];
+            uniform_sound_data.size = sound_data.size;
+            uniform_sound_data.offset = sound_data.offset;
+            uniform_sound_data.current_frame = 0;
+            self.uniform.count += 1;
         }
-        return false; // Sound with given ID not found
+
+        return self.next_id;
     }
 
     // Update loop - call this once per frame to cleanup finished sounds
     pub fn update(self: *SoundManager) void {
-        var i: usize = 0;
-        while (i < self.sound_instances.items.len) {
-            const instance = &self.sound_instances.items[i];
+        // Iterate backwards to safely remove elements
+        var i: usize = self.instances.items.len;
+        while (i > 0) {
+            i -= 1;
+            const instance = self.instances.items[i];
+
             if (!instance.sound.isPlaying()) {
                 // Sound is no longer playing, clean it up
                 instance.sound.destroy();
 
                 // If this wasn't the last active sound, move the last one to this spot
-                if (instance.data_index < self.uniform.count - 1) {
-                    self.uniform.data[instance.data_index] = self.uniform.data[self.uniform.count - 1];
+                if (instance.instance_data_index < self.uniform.count - 1) {
+                    self.uniform.instances[instance.instance_data_index] = self.uniform.instances[self.uniform.count - 1];
 
                     // Update the index of the sound instance that was moved
-                    for (self.sound_instances.items) |*other_instance| {
-                        if (other_instance.data_index == self.uniform.count - 1) {
-                            other_instance.data_index = instance.data_index;
+                    for (self.instances.items) |*other_instance| {
+                        if (other_instance.instance_data_index == self.uniform.count - 1) {
+                            other_instance.instance_data_index = instance.instance_data_index;
                             break;
                         }
                     }
                 }
 
                 self.uniform.count -= 1;
-                _ = self.sound_instances.swapRemove(i);
+                _ = self.instances.swapRemove(i);
             } else {
-                const pcr_frame: u64 = instance.sound.getCursorInPcmFrames() catch 0;
-                const frame = @as(u32, @intCast(pcr_frame));
-                self.uniform.data[instance.data_index].frame = frame;
-                i += 1;
+                if (instance.instance_data_index < self.uniform.count - 1) {
+                    const pcr_frame: u64 = instance.sound.getCursorInPcmFrames() catch 0;
+                    const frame = @as(u32, @intCast(pcr_frame));
+                    self.uniform.instances[instance.instance_data_index].current_frame = frame;
+                }
             }
         }
     }
 
-    // Get the entire uniform buffer for WebGPU
-    pub fn getUniformBuffer(self: *const SoundManager) *const SoundUniform {
-        return &self.uniform;
-    }
-
-    // Get the uniform buffer as bytes
-    pub fn getUniformBufferBytes(self: *const SoundManager) []const u8 {
-        return std.mem.asBytes(&self.uniform);
-    }
-
     pub fn deinit(self: *SoundManager) void {
-        for (self.sound_instances.items) |instance| {
+        for (self.instances.items) |instance| {
             instance.sound.destroy();
         }
-        self.sound_instances.deinit();
+        self.data.deinit();
+        self.instances.deinit();
         self.engine.destroy();
         zaudio.deinit();
     }
 };
+
+// Verify alignment
+comptime {
+    if (@sizeOf(SoundInstanceData) % 16 != 0) {
+        @compileError("SoundInstanceData must be 16-byte aligned for WebGPU. Current size: " ++ std.fmt.comptimePrint("{}", .{@sizeOf(SoundInstanceData)}));
+    }
+    if (@sizeOf(SoundUniform) % 16 != 0) {
+        @compileError("SoundUniform must be 16-byte aligned for WebGPU. Current size: " ++ std.fmt.comptimePrint("{}", .{@sizeOf(SoundUniform)}));
+    }
+}
