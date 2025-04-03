@@ -96,9 +96,18 @@ fn convertToMonoU8(allocator: std.mem.Allocator, header: WavHeader, pcmData: []c
                 sample_sum += normalized;
             }
         }
-
         // Average the channels
-        mono_data[i] = @as(u8, @intCast(@divTrunc(sample_sum, header.num_channels)));
+        const avg_val = @divTrunc(sample_sum, header.num_channels);
+
+        // Calculate absolute difference from 128 and scale by 2
+        const abs_diff = if (avg_val > 128) avg_val - 128 else 128 - avg_val;
+        var scaled_val = abs_diff * 2;
+
+        // Clamp to ensure it stays in 0-255 range
+        if (scaled_val > 255) scaled_val = 255;
+
+        // Store the value (0=silence, 255=max amplitude)
+        mono_data[i] = @intCast(scaled_val);
     }
 
     return mono_data;
