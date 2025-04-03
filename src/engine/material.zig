@@ -32,13 +32,11 @@ pub fn Material(comptime T: type) type {
             });
             defer gctx.releaseResource(bind_group_layout);
 
-            const sampler = gctx.createSampler(.{});
-
             const bind_group = gctx.createBindGroup(bind_group_layout, &.{
                 .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = @sizeOf(zm.Mat) },
                 .{ .binding = 1, .buffer_handle = instance_buffer.gpu_buffer, .offset = 0, .size = (@sizeOf(Instance) * instance_buffer.total_number) },
                 .{ .binding = 2, .texture_view_handle = sounds_texture.texture_view },
-                .{ .binding = 3, .sampler_handle = sampler },
+                .{ .binding = 3, .sampler_handle = sounds_texture.sampler },
             });
 
             const pipeline_layout = gctx.createPipelineLayout(&.{bind_group_layout});

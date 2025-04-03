@@ -7,6 +7,7 @@ const Utils = @import("utils.zig");
 pub const SoundsTexture = struct {
     texture: zgpu.TextureHandle,
     texture_view: zgpu.TextureViewHandle,
+    sampler: zgpu.SamplerHandle,
     gctx: *zgpu.GraphicsContext,
     max_texture_size: u32,
 
@@ -45,6 +46,16 @@ pub const SoundsTexture = struct {
         });
         const texture_view = gctx.createTextureView(texture, .{});
 
+        // Create a sampler with CLAMP_TO_EDGE address mode
+        const sampler = gctx.createSampler(.{
+            .address_mode_u = .clamp_to_edge,
+            .address_mode_v = .clamp_to_edge,
+            .address_mode_w = .clamp_to_edge,
+            .mag_filter = .nearest,
+            .min_filter = .nearest,
+            .mipmap_filter = .nearest,
+        });
+
         gctx.queue.writeTexture(
             .{ .texture = gctx.lookupResource(texture).? },
             .{
@@ -59,6 +70,7 @@ pub const SoundsTexture = struct {
         return SoundsTexture{
             .texture = texture,
             .texture_view = texture_view,
+            .sampler = sampler,
             .gctx = gctx,
             .max_texture_size = max_texture_size,
         };

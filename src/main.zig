@@ -74,7 +74,7 @@ pub fn main() !void {
     grid.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 1, 1 }, .scale = .{ 1, 1, 1 } });
 
     var plane = engine.addMeshInstance(&debug_sound_material, plane_mesh);
-    plane.addInstance(.{ .position = .{ 0.0, 10.0, -10.0 }, .rotation = .{ 0.7071, 0, 0, 0.7071 }, .scale = .{ 5, 5, 5 } });
+    plane.addInstance(.{ .position = .{ 0.0, 5.0, -10.0 }, .rotation = .{ 0.7071, 0, 0, 0.7071 }, .scale = .{ 5, 5, 5 } });
 
     var free_camera = FreeCamera.init(&engine);
 
