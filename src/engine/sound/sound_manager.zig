@@ -5,13 +5,17 @@ const WavDecoder = @import("wav_decoder.zig");
 
 // Define the enum of predefined sound files
 pub const SoundFile = enum {
+    deep,
     rumble,
     music,
+    blip,
     // Returns the file path for each sound
     pub fn getPath(self: SoundFile) [:0]const u8 {
         return switch (self) {
+            .deep => "content/sound/100hz.wav",
             .rumble => "content/sound/sin.wav",
             .music => "content/sound/sample.wav",
+            .blip => "content/sound/Blip_Select8.wav",
         };
     }
 };
@@ -50,6 +54,10 @@ pub const SoundDatas = struct {
             const padding_bytes = max_texture_size_2d - remainder;
             try all_sound_data.appendNTimes(0, padding_bytes);
         }
+
+        // for (all_sound_data.items) |*item| {
+        //     item.* = 0;
+        // }
 
         return SoundDatas{
             .all_sound_data = all_sound_data,

@@ -7,6 +7,7 @@ const wgpu = zgpu.wgpu;
 const content_dir = @import("build_options").content_dir;
 
 const Engine = @import("engine/engine.zig").Engine;
+const SoundFile = @import("engine/sound/sound_manager.zig").SoundFile;
 
 pub const GUI = struct {
     engine: *Engine,
@@ -81,19 +82,11 @@ pub const GUI = struct {
             if (zgui.collapsingHeader("Sound Controls", .{ .default_open = true })) {
                 zgui.spacing();
                 zgui.indent(.{ .indent_w = 20 });
-                // Play rumble sound button
-                if (zgui.button("Play Rumble Sound", .{})) {
-                    _ = self.engine.sound_manager.play(.rumble) catch |err| {
-                        std.debug.print("Failed to play rumble sound: {}\n", .{err});
-                    };
+
+                for (std.enums.values(SoundFile)) |sound_file| {
+                    self.renderPlaySoundButton(sound_file);
                 }
 
-                // Play music button
-                if (zgui.button("Play Music", .{})) {
-                    _ = self.engine.sound_manager.play(.music) catch |err| {
-                        std.debug.print("Failed to play music: {}\n", .{err});
-                    };
-                }
                 zgui.unindent(.{ .indent_w = 20 });
                 zgui.spacing();
             }
@@ -111,6 +104,22 @@ pub const GUI = struct {
         self.renderSoundUniform();
 
         zgui.end();
+    }
+
+    fn renderPlaySoundButton(self: *GUI, sound: SoundFile) void {
+        // Create a fixed buffer for the button label - make it large enough for any tag name
+        var buffer: [64:0]u8 = undefined;
+
+        // Get the tag name
+        const tag_str = std.enums.tagName(SoundFile, sound) orelse "Unknown";
+
+        // Create a null-terminated string in our buffer
+        const button_text = std.fmt.bufPrintZ(&buffer, "Play {s}", .{tag_str}) catch "Play";
+        if (zgui.button(button_text, .{})) {
+            _ = self.engine.sound_manager.play(sound) catch |err| {
+                std.debug.print("Failed to play rumble sound: {}\n", .{err});
+            };
+        }
     }
 
     fn renderSoundUniform(self: *GUI) void {
