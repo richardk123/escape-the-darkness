@@ -27,11 +27,11 @@ pub const SoundData = struct {
 };
 
 pub const SoundDatas = struct {
-    all_sound_data: std.ArrayList(u8),
+    sounds_texture_data: std.ArrayList(u8),
     sounds: std.ArrayList(SoundData),
 
     pub fn init(allocator: std.mem.Allocator, max_texture_size_2d: u32) !SoundDatas {
-        var all_sound_data = std.ArrayList(u8).init(allocator);
+        var sounds_texture_data = std.ArrayList(u8).init(allocator);
         var sounds = std.ArrayList(SoundData).init(allocator);
 
         var offset: u32 = 0;
@@ -44,23 +44,25 @@ pub const SoundDatas = struct {
                 .offset = offset,
                 .sound_file = sound_file,
             });
-            try all_sound_data.appendSlice(raw_data);
+            try sounds_texture_data.appendSlice(raw_data);
             offset += size;
         }
 
-        // Add padding bytes to ensure total size is a multiple of 4
-        const remainder = all_sound_data.items.len % max_texture_size_2d;
-        if (remainder != 0) {
-            const padding_bytes = max_texture_size_2d - remainder;
-            try all_sound_data.appendNTimes(0, padding_bytes);
+        // Calculate texture dimensions
+        const pixel_data_len = sounds_texture_data.items.len / 4;
+        const width = max_texture_size_2d;
+        const height = (pixel_data_len + width - 1) / width; // Ceiling division
+        const total_pixels = width * height;
+        const total_bytes = total_pixels * 4;
+
+        // Add padding to match exact texture size
+        if (sounds_texture_data.items.len < total_bytes) {
+            const padding_bytes = total_bytes - sounds_texture_data.items.len;
+            try sounds_texture_data.appendNTimes(0, padding_bytes);
         }
 
-        // for (all_sound_data.items) |*item| {
-        //     item.* = 0;
-        // }
-
         return SoundDatas{
-            .all_sound_data = all_sound_data,
+            .sounds_texture_data = sounds_texture_data,
             .sounds = sounds,
         };
     }
@@ -78,7 +80,7 @@ pub const SoundDatas = struct {
     }
 
     pub fn deinit(self: *SoundDatas) void {
-        self.all_sound_data.deinit();
+        self.sounds_texture_data.deinit();
         self.sounds.deinit();
     }
 };

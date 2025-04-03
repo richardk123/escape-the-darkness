@@ -52,7 +52,7 @@ pub const Engine = struct {
         const sound_manager = try sm.SoundManager.init(allocator, max_texture_size_2d);
 
         // Create texture containing all sounds
-        const sounds_data = sound_manager.data.all_sound_data.items;
+        const sounds_data = sound_manager.data.sounds_texture_data.items;
         const sounds_texture = GPUTexture.init(gctx, sounds_data);
 
         // Create instances
