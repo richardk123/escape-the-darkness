@@ -10,6 +10,7 @@ const FreeCamera = @import("utils/camera_free.zig").FreeCamera;
 
 const echolocation_shader = @embedFile("engine/shader/echolocation.wgsl");
 const debug_shader = @embedFile("engine/shader/debug.wgsl");
+const debug_sound_texture_shader = @embedFile("engine/shader/debug_sound_texture.wgsl");
 
 pub fn main() !void {
     try zglfw.init();
@@ -42,6 +43,7 @@ pub fn main() !void {
     const monkey_mesh = try meshes.loadMesh("monkey.gltf");
     const cube_mesh = try meshes.loadMesh("cube.gltf");
     const torus_mesh = try meshes.loadMesh("torus.gltf");
+    const plane_mesh = try meshes.loadMesh("plane.gltf");
 
     var engine = try Engine.init(allocator, window, &meshes);
     defer engine.deinit();
@@ -50,6 +52,7 @@ pub fn main() !void {
     defer gui.deinit();
 
     const echolocation_material = engine.createMaterial(echolocation_shader);
+    const debug_sound_material = engine.createMaterial(debug_sound_texture_shader);
     const debug_material = engine.createMaterialDebug(debug_shader);
 
     var monkey = engine.addMeshInstance(&echolocation_material, monkey_mesh);
@@ -68,7 +71,10 @@ pub fn main() !void {
     torus.addInstance(.{ .position = .{ 20.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 0.5, 0.5, 0.5 } });
 
     var grid = engine.addMeshInstance(&debug_material, grid_mesh);
-    grid.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    grid.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 1, 1 }, .scale = .{ 1, 1, 1 } });
+
+    var plane = engine.addMeshInstance(&debug_sound_material, plane_mesh);
+    plane.addInstance(.{ .position = .{ 0.0, 10.0, -10.0 }, .rotation = .{ 0.7071, 0, 0, 0.7071 }, .scale = .{ 5, 5, 5 } });
 
     var free_camera = FreeCamera.init(&engine);
 

@@ -5,6 +5,7 @@ const expect = std.testing.expect;
 pub const Vertex = extern struct {
     position: [3]f32,
     normal: [3]f32,
+    uv: [2]f32,
 };
 
 pub const Mesh = struct {
@@ -39,9 +40,11 @@ pub const Meshes = struct {
         var mesh_indices = std.ArrayList(u32).init(self.allocator);
         var mesh_positions = std.ArrayList([3]f32).init(self.allocator);
         var mesh_normals = std.ArrayList([3]f32).init(self.allocator);
+        var uv = std.ArrayList([2]f32).init(self.allocator);
         defer mesh_indices.deinit();
         defer mesh_positions.deinit();
         defer mesh_normals.deinit();
+        defer uv.deinit();
 
         try zmesh.io.zcgltf.appendMeshPrimitive(
             data,
@@ -50,7 +53,7 @@ pub const Meshes = struct {
             &mesh_indices,
             &mesh_positions,
             &mesh_normals, // normals (optional)
-            null, // texcoords (optional)
+            &uv, // texcoords (optional)
             null, // tangents (optional)
         );
 
@@ -69,6 +72,7 @@ pub const Meshes = struct {
             try self.vertices.append(.{
                 .position = mesh_positions.items[index],
                 .normal = mesh_normals.items[index],
+                .uv = uv.items[index],
             });
         }
 

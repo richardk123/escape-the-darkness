@@ -1,6 +1,6 @@
 struct VertexOut {
     @builtin(position) position_clip: vec4<f32>,
-    @location(0) color: vec3<f32>,
+    @location(0) uv: vec2<f32>,
 }
 
 struct Instance {
@@ -36,7 +36,7 @@ fn vs(
     // 4. Apply the camera/projection transformation
     output.position_clip = vec4(transformed_position, 1.0) * object_to_clip;
 
-    output.color = normal;
+    output.uv = uv;
     return output;
 }
 
@@ -44,9 +44,9 @@ fn vs(
 @group(0) @binding(3) var image_sampler: sampler;
 @fragment
 fn fs(
-    @location(0) color: vec3<f32>,
+    @location(0) uv: vec2<f32>,
 ) -> @location(0) vec4<f32> {
-    return vec4(color, 1.0);
+    return textureSample(image, image_sampler, uv);// sample from the texture
 }
 
 // Apply quaternion rotation to a vector

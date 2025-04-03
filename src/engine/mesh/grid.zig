@@ -32,20 +32,24 @@ pub const Grid = struct {
             vertices.appendAssumeCapacity(.{
                 .position = [_]f32{ -half_grid_size, 0.0, pos },
                 .normal = [_]f32{ 0.0, 1.0, 0.0 },
+                .uv = [_]f32{ 0.0, 0.0 },
             });
             vertices.appendAssumeCapacity(.{
                 .position = [_]f32{ half_grid_size, 0.0, pos },
                 .normal = [_]f32{ 0.0, 1.0, 0.0 },
+                .uv = [_]f32{ 0.0, 0.0 },
             });
 
             // Line along Z-axis (from min to max Z at current X)
             vertices.appendAssumeCapacity(.{
                 .position = [_]f32{ pos, 0.0, -half_grid_size },
                 .normal = [_]f32{ 0.0, 1.0, 0.0 },
+                .uv = [_]f32{ 0.0, 0.0 },
             });
             vertices.appendAssumeCapacity(.{
                 .position = [_]f32{ pos, 0.0, half_grid_size },
                 .normal = [_]f32{ 0.0, 1.0, 0.0 },
+                .uv = [_]f32{ 0.0, 0.0 },
             });
 
             // Indices for the two lines
