@@ -1,6 +1,6 @@
 const std = @import("std");
 const zaudio = @import("zaudio");
-const Constants = @import("../../constants.zig");
+const Constants = @import("../common//constants.zig");
 const WavDecoder = @import("wav_decoder.zig");
 
 // Define the enum of predefined sound files
@@ -26,7 +26,7 @@ pub const SoundDatas = struct {
     all_sound_data: std.ArrayList(u8),
     sounds: std.ArrayList(SoundData),
 
-    pub fn init(allocator: std.mem.Allocator) !SoundDatas {
+    pub fn init(allocator: std.mem.Allocator, max_texture_size_2d: u32) !SoundDatas {
         var all_sound_data = std.ArrayList(u8).init(allocator);
         var sounds = std.ArrayList(SoundData).init(allocator);
 
@@ -45,9 +45,9 @@ pub const SoundDatas = struct {
         }
 
         // Add padding bytes to ensure total size is a multiple of 4
-        const remainder = all_sound_data.items.len % 4;
+        const remainder = all_sound_data.items.len % max_texture_size_2d;
         if (remainder != 0) {
-            const padding_bytes = 4 - remainder;
+            const padding_bytes = max_texture_size_2d - remainder;
             try all_sound_data.appendNTimes(0, padding_bytes);
         }
 
@@ -113,9 +113,9 @@ pub const SoundManager = struct {
     next_id: usize = 0,
     uniform: SoundUniform,
 
-    pub fn init(allocator: std.mem.Allocator) !SoundManager {
-        const sound_datas = try SoundDatas.init(allocator);
+    pub fn init(allocator: std.mem.Allocator, max_texture_size_2d: u32) !SoundManager {
         zaudio.init(allocator);
+        const sound_datas = try SoundDatas.init(allocator, max_texture_size_2d);
         const engine = try zaudio.Engine.create(null);
         const sound_instances = std.ArrayList(SoundInstance).init(allocator);
         const sound_uniform = SoundUniform.init();

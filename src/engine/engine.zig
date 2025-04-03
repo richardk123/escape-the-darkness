@@ -5,14 +5,16 @@ const wgpu = zgpu.wgpu;
 
 const Renderer = @import("common/renderer.zig").Renderer;
 const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
+const GPUTexture = @import("common/texture.zig").SoundsTexture;
 const Material = @import("material.zig").Material;
 const mesh = @import("mesh.zig");
 const MeshInstances = @import("mesh_instance.zig").MeshInstances;
 const MeshInstance = @import("mesh_instance.zig").MeshInstance;
 const Instance = @import("mesh_instance.zig").Instance;
-const Constants = @import("../constants.zig");
+const Constants = @import("common/constants.zig");
 const Camera = @import("camera.zig").Camera;
 const sm = @import("sound/sound_manager.zig");
+const Utils = @import("common/utils.zig");
 
 pub const Engine = struct {
     allocator: std.mem.Allocator,
@@ -23,6 +25,7 @@ pub const Engine = struct {
     vertex_buffer: GPUBuffer(mesh.Vertex),
     index_buffer: GPUBuffer(u32),
     instance_buffer: GPUBuffer(Instance),
+    sounds_texture: GPUTexture,
     camera: Camera,
     sound_manager: sm.SoundManager,
 
@@ -40,17 +43,17 @@ pub const Engine = struct {
         const index_buffer = GPUBuffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, total_num_indices);
         index_buffer.write(meshes.indices.items);
 
-        const sound_manager = try sm.SoundManager.init(allocator);
-
-        // Create a sound buffer
-        const sounds_data = sound_manager.data.all_sound_data.items;
-        const sounds_data_count = @as(u32, @intCast(sounds_data.len));
-        const sounds_data_buffer = GPUBuffer(u8).init(gctx, .{ .copy_dst = true, .storage = true }, sounds_data_count);
-        sounds_data_buffer.write(sounds_data);
-
         // Create an instances buffer
         const instances_buffer_usage: wgpu.BufferUsage = .{ .copy_dst = true, .storage = true };
         const instances_buffer = GPUBuffer(Instance).init(gctx, instances_buffer_usage, Constants.MAX_INSTANCE_COUNT);
+
+        // Sound Manager
+        const max_texture_size_2d = Utils.findTexture2dMaxSize(gctx);
+        const sound_manager = try sm.SoundManager.init(allocator, max_texture_size_2d);
+
+        // Create texture containing all sounds
+        const sounds_data = sound_manager.data.all_sound_data.items;
+        const sounds_texture = GPUTexture.init(gctx, sounds_data);
 
         // Create instances
         const mesh_instances = try MeshInstances.init(allocator);
@@ -64,6 +67,7 @@ pub const Engine = struct {
             .index_buffer = index_buffer,
             .instance_buffer = instances_buffer,
             .mesh_instances = mesh_instances,
+            .sounds_texture = sounds_texture,
             .camera = Camera.init(gctx),
             .sound_manager = sound_manager,
         };

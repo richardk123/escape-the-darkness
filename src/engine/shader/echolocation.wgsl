@@ -39,6 +39,8 @@ fn vs(
     return output;
 }
 
+@group(0) @binding(1) var image: texture_2d<f32>;
+@group(0) @binding(2) var image_sampler: sampler;
 @fragment
 fn fs(
     @location(0) color: vec3<f32>,
