@@ -1,7 +1,20 @@
-struct VertexOut {
-    @builtin(position) position_clip: vec4<f32>,
-    @location(0) color: vec3<f32>,
-}
+struct SoundInstanceData {
+    offset: u32,
+    size: u32,
+    current_frame: u32,
+    _padding1: u32,
+    position: vec3<f32>,
+    _padding2: u32,
+};
+
+struct GlobalUniform {
+    camera_matrix: mat4x4<f32>,
+    sound_count: u32,
+    _pad1: u32,
+    _pad2: u32,
+    _pad3: u32,
+    sound_instances: array<SoundInstanceData, 16>, // Use your MAX_SOUND_COUNT here
+};
 
 struct Instance {
     position: vec3<f32>,
@@ -9,7 +22,12 @@ struct Instance {
     scale: vec3<f32>,
 };
 
-@group(0) @binding(0) var<uniform> object_to_clip: mat4x4<f32>;
+struct VertexOut {
+    @builtin(position) position_clip: vec4<f32>,
+    @location(0) color: vec3<f32>,
+}
+
+@group(0) @binding(0) var<uniform> global: GlobalUniform;
 @group(0) @binding(1) var<storage, read> instances: array<Instance>;
 @vertex
 fn vs(
@@ -34,7 +52,7 @@ fn vs(
     transformed_position = transformed_position + instance.position;
 
     // 4. Apply the camera/projection transformation
-    output.position_clip = vec4(transformed_position, 1.0) * object_to_clip;
+    output.position_clip = vec4(transformed_position, 1.0) * global.camera_matrix;
 
     output.color = normal;
     return output;

@@ -15,7 +15,7 @@ pub const Camera = struct {
         return Camera{ .gctx = gctx };
     }
 
-    pub fn writeBuffer(self: *Camera) u32 {
+    pub fn calculateCameraMatrix(self: *Camera) zm.Mat {
         const gctx = self.gctx;
         const fb_width = gctx.swapchain_descriptor.width;
         const fb_height = gctx.swapchain_descriptor.height;
@@ -35,10 +35,6 @@ pub const Camera = struct {
 
         const cam_world_to_clip = zm.mul(cam_world_to_view, cam_view_to_clip);
 
-        // pass the world-to-clip matrix to the shader
-        const mem = gctx.uniformsAllocate(zm.Mat, 1);
-        mem.slice[0] = zm.transpose(cam_world_to_clip);
-
-        return mem.offset;
+        return zm.transpose(cam_world_to_clip);
     }
 };

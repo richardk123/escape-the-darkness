@@ -15,6 +15,7 @@ const Constants = @import("common/constants.zig");
 const Camera = @import("camera.zig").Camera;
 const sm = @import("sound/sound_manager.zig");
 const Utils = @import("common/utils.zig");
+const GlobalUniform = @import("global_uniform.zig").GlobalUniform;
 
 pub const Engine = struct {
     allocator: std.mem.Allocator,
@@ -27,6 +28,7 @@ pub const Engine = struct {
     instance_buffer: GPUBuffer(Instance),
     sounds_texture: GPUTexture,
     camera: Camera,
+    global_uniform: GlobalUniform,
     sound_manager: sm.SoundManager,
 
     pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, meshes: *mesh.Meshes) !Engine {
@@ -68,6 +70,7 @@ pub const Engine = struct {
             .instance_buffer = instances_buffer,
             .mesh_instances = mesh_instances,
             .sounds_texture = sounds_texture,
+            .global_uniform = GlobalUniform.init(),
             .camera = Camera.init(gctx),
             .sound_manager = sound_manager,
         };
@@ -98,8 +101,11 @@ pub const Engine = struct {
             pass.release();
         }
 
-        // write camera buffer
-        const camera_mem_offset = self.camera.writeBuffer();
+        // write global uniform data
+        self.global_uniform.update(&self.camera, &self.sound_manager);
+
+        const uniform_mem = gctx.uniformsAllocate(GlobalUniform, 1);
+        uniform_mem.slice[0] = self.global_uniform;
 
         // write instance buffer
         self.mesh_instances.writeBuffer(&self.instance_buffer);
@@ -119,7 +125,7 @@ pub const Engine = struct {
                 pass.setPipeline(pipeline);
 
                 const instance_count = @as(u32, @intCast(mi.instances.items.len));
-                pass.setBindGroup(0, bind_group, &.{camera_mem_offset});
+                pass.setBindGroup(0, bind_group, &.{uniform_mem.offset});
 
                 const instance_offset = @as(u32, @intCast(mi.offset));
                 pass.drawIndexed(

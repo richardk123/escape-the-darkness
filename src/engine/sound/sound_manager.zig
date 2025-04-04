@@ -85,11 +85,13 @@ pub const SoundDatas = struct {
     }
 };
 
-pub const SoundInstanceData = struct {
+pub const SoundInstanceData = extern struct {
     offset: u32 = 0,
     size: u32 = 0,
     current_frame: u32 = 0,
-    _padding: u32 = 0,
+    _padding1: u32 = 0,
+    position: [3]f32,
+    _padding2: u32 = 0,
 };
 
 pub const SoundUniform = struct {
@@ -104,7 +106,7 @@ pub const SoundUniform = struct {
         };
         // Initialize all sound data entries
         for (&uniform.instances) |*data| {
-            data.* = .{};
+            data.* = .{ .position = .{ 0.0, 0.0, 0.0 } };
         }
         return uniform;
     }
@@ -114,6 +116,7 @@ pub const SoundInstance = struct {
     sound: *zaudio.Sound,
     instance_data_index: usize,
     id: usize,
+    position: [3]f32 = .{ 0.0, 0.0, 0.0 },
 };
 
 pub const SoundManager = struct {
@@ -138,7 +141,7 @@ pub const SoundManager = struct {
         };
     }
 
-    pub fn play(self: *SoundManager, sound_file: SoundFile) !usize {
+    pub fn play(self: *SoundManager, sound_file: SoundFile, position: [3]f32) !usize {
         const sound = try self.engine.createSoundFromFile(sound_file.getPath(), .{ .flags = .{ .stream = true } });
         std.debug.print("playing sound {s} \n", .{sound_file.getPath()});
         try sound.start();
@@ -149,6 +152,7 @@ pub const SoundManager = struct {
             .id = self.next_id,
             .sound = sound,
             .instance_data_index = self.instances.items.len,
+            .position = position,
         });
 
         self.next_id += 1;
@@ -158,6 +162,7 @@ pub const SoundManager = struct {
             uniform_sound_data.size = sound_data.size;
             uniform_sound_data.offset = sound_data.offset;
             uniform_sound_data.current_frame = 0;
+            uniform_sound_data.position = position;
             self.uniform.count += 1;
         }
 
@@ -197,6 +202,7 @@ pub const SoundManager = struct {
                     const pcr_frame: u64 = instance.sound.getCursorInPcmFrames() catch 0;
                     const frame = @as(u32, @intCast(pcr_frame));
                     self.uniform.instances[instance.instance_data_index].current_frame = frame;
+                    self.uniform.instances[instance.instance_data_index].position = instance.position;
                 }
             }
         }
