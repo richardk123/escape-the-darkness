@@ -7,19 +7,16 @@ const Camera = @import("camera.zig").Camera;
 pub const GlobalUniform = extern struct {
     // Camera matrix
     camera_matrix: zm.Mat, // 16 * 4 = 64 bytes
-
+    camera_position: [3]f32,
     // Sound data
     sound_count: u32,
-    _pad1: u32 = 0,
-    _pad2: u32 = 0,
-    _pad3: u32 = 0, // 4 * 4 = 16 bytes
-
     // Array of sound instances
     sound_instances: [Constants.MAX_SOUND_COUNT]sm.SoundInstanceData,
 
     pub fn init() GlobalUniform {
         var uniform = GlobalUniform{
             .camera_matrix = zm.identity(),
+            .camera_position = .{ 0.0, 0.0, 0.0 },
             .sound_count = 0,
             .sound_instances = undefined,
         };
@@ -42,7 +39,7 @@ pub const GlobalUniform = extern struct {
     pub fn update(self: *GlobalUniform, camera: *Camera, sound_manager: *sm.SoundManager) void {
         // Update camera matrix
         self.camera_matrix = camera.calculateCameraMatrix();
-
+        self.camera_position = camera.position;
         // Update sound count
         self.sound_count = sound_manager.uniform.count;
 

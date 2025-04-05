@@ -69,10 +69,14 @@ pub const Meshes = struct {
 
         try self.vertices.ensureTotalCapacity(mesh_positions.items.len);
         for (mesh_positions.items, 0..) |_, index| {
+            const vertex_uv = if (index < uv.items.len)
+                uv.items[index]
+            else
+                .{ 0.0, 0.0 };
             try self.vertices.append(.{
                 .position = mesh_positions.items[index],
                 .normal = mesh_normals.items[index],
-                .uv = uv.items[index],
+                .uv = vertex_uv,
             });
         }
 

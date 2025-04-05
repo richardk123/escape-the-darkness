@@ -38,12 +38,11 @@ pub fn main() !void {
 
     const grid_data = try Grid.init(allocator, 100, 1.0);
     defer grid_data.deinit();
-    const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
+    // const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
 
-    const monkey_mesh = try meshes.loadMesh("monkey.gltf");
-    const cube_mesh = try meshes.loadMesh("cube.gltf");
-    const torus_mesh = try meshes.loadMesh("torus.gltf");
+    const monkey_mesh = try meshes.loadMesh("monkey_smooth.gltf");
     const plane_mesh = try meshes.loadMesh("plane.gltf");
+    const terrain_mesh = try meshes.loadMesh("terrain.gltf");
 
     var engine = try Engine.init(allocator, window, &meshes);
     defer engine.deinit();
@@ -53,28 +52,26 @@ pub fn main() !void {
 
     const echolocation_material = engine.createMaterial(echolocation_shader);
     const debug_sound_material = engine.createMaterial(debug_sound_texture_shader);
-    const debug_material = engine.createMaterialDebug(debug_shader);
+    // const debug_material = engine.createMaterialDebug(debug_shader);
 
     var monkey = engine.addMeshInstance(&echolocation_material, monkey_mesh);
-    monkey.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-    monkey.addInstance(.{ .position = .{ 10.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-    monkey.addInstance(.{ .position = .{ 20.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0.7071, 0.7071 }, .scale = .{ 1, 1, 1 } });
+    for (0..5) |i| {
+        const dist: f32 = @floatFromInt(i + 1);
+        monkey.addInstance(.{ .position = .{ dist * dist, 2.0, dist * -10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+        monkey.addInstance(.{ .position = .{ -dist * dist, 2.0, dist * -10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    }
 
-    var cube = engine.addMeshInstance(&echolocation_material, cube_mesh);
-    cube.addInstance(.{ .position = .{ 0.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-    cube.addInstance(.{ .position = .{ 10.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-    cube.addInstance(.{ .position = .{ 20.0, 10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    var plane_echo = engine.addMeshInstance(&echolocation_material, plane_mesh);
+    plane_echo.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 5000, 5000, 5000 } });
 
-    var torus = engine.addMeshInstance(&echolocation_material, torus_mesh);
-    torus.addInstance(.{ .position = .{ 0.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-    torus.addInstance(.{ .position = .{ 10.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 0.75, 0.75, 0.75 } });
-    torus.addInstance(.{ .position = .{ 20.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 0.5, 0.5, 0.5 } });
+    var terrain = engine.addMeshInstance(&echolocation_material, terrain_mesh);
+    terrain.addInstance(.{ .position = .{ 0.0, 0.0, -50.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
-    var grid = engine.addMeshInstance(&debug_material, grid_mesh);
-    grid.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 1, 1 }, .scale = .{ 1, 1, 1 } });
+    // const grid = engine.addMeshInstance(&debug_material, grid_mesh);
+    // grid.addInstance(.{ .position = .{ 0.0, 0.2, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
-    var plane = engine.addMeshInstance(&debug_sound_material, plane_mesh);
-    plane.addInstance(.{ .position = .{ 0.0, 5.0, 25.0 }, .rotation = .{ 0.7071, 0, 0, 0.7071 }, .scale = .{ 5, 5, 5 } });
+    var debiug_sound_quad = engine.addMeshInstance(&debug_sound_material, plane_mesh);
+    debiug_sound_quad.addInstance(.{ .position = .{ 0.0, 0.1, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
     var free_camera = FreeCamera.init(&engine);
 

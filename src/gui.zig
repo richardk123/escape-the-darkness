@@ -97,7 +97,7 @@ pub const GUI = struct {
 
             // Reset Camera Button
             if (zgui.button("Reset Camera", .{})) {
-                self.engine.camera.position = .{ 0, 4.0, 40.0 };
+                self.engine.camera.position = .{ 0.0, 2.0, 0.0 };
             }
         }
 
@@ -116,7 +116,7 @@ pub const GUI = struct {
         // Create a null-terminated string in our buffer
         const button_text = std.fmt.bufPrintZ(&buffer, "Play {s}", .{tag_str}) catch "Play";
         if (zgui.button(button_text, .{})) {
-            _ = self.engine.sound_manager.play(sound, .{ 0.0, 0.0, 0.0 }) catch |err| {
+            _ = self.engine.sound_manager.play(sound, .{ 0.0, 2.0, 0.0 }) catch |err| {
                 std.debug.print("Failed to play rumble sound: {}\n", .{err});
             };
         }
@@ -138,7 +138,7 @@ pub const GUI = struct {
             // Display information about each active sound instance
             if (self.engine.sound_manager.uniform.count > 0) {
                 zgui.separator();
-                for (0..@min(self.engine.sound_manager.uniform.count, @as(u32, @intCast(self.engine.sound_manager.uniform.instances.len)))) |i| {
+                for (0..self.engine.sound_manager.uniform.count) |i| {
                     const instance = self.engine.sound_manager.uniform.instances[i];
 
                     zgui.text("Instance {d}:", .{i});

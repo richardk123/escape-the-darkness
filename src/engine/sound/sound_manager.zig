@@ -9,13 +9,15 @@ pub const SoundFile = enum {
     rumble,
     music,
     blip,
+    water_drop,
     // Returns the file path for each sound
     pub fn getPath(self: SoundFile) [:0]const u8 {
         return switch (self) {
-            .deep => "content/sound/100hz.wav",
+            .deep => "content/sound/80hz.wav",
             .rumble => "content/sound/sin.wav",
             .music => "content/sound/sample.wav",
             .blip => "content/sound/Blip_Select8.wav",
+            .water_drop => "content/sound/water-drop.wav",
         };
     }
 };
@@ -143,7 +145,6 @@ pub const SoundManager = struct {
 
     pub fn play(self: *SoundManager, sound_file: SoundFile, position: [3]f32) !usize {
         const sound = try self.engine.createSoundFromFile(sound_file.getPath(), .{ .flags = .{ .stream = true } });
-        std.debug.print("playing sound {s} \n", .{sound_file.getPath()});
         try sound.start();
 
         const sound_data = self.data.findSoundData(sound_file);

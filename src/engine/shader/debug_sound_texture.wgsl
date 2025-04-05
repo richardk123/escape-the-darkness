@@ -9,10 +9,8 @@ struct SoundInstanceData {
 
 struct GlobalUniform {
     camera_matrix: mat4x4<f32>,
+    camera_position: vec3<f32>,
     sound_count: u32,
-    _pad1: u32,
-    _pad2: u32,
-    _pad3: u32,
     sound_instances: array<SoundInstanceData, 16>, // Use your MAX_SOUND_COUNT here
 };
 

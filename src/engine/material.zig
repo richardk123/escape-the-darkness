@@ -25,7 +25,7 @@ pub fn Material(comptime T: type) type {
 
             // Create a bind group layout needed for our render pipeline.
             const bind_group_layout = gctx.createBindGroupLayout(&.{
-                zgpu.bufferEntry(0, .{ .vertex = true }, .uniform, true, 0),
+                zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, true, 0),
                 zgpu.bufferEntry(1, .{ .vertex = true }, .read_only_storage, false, 0),
                 zgpu.textureEntry(2, .{ .fragment = true }, .float, .tvdim_2d, false),
                 zgpu.samplerEntry(3, .{ .fragment = true }, .non_filtering),

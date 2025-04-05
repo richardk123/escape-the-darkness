@@ -9,10 +9,8 @@ struct SoundInstanceData {
 
 struct GlobalUniform {
     camera_matrix: mat4x4<f32>,
+    camera_position: vec3<f32>,
     sound_count: u32,
-    _pad1: u32,
-    _pad2: u32,
-    _pad3: u32,
     sound_instances: array<SoundInstanceData, 16>, // Use your MAX_SOUND_COUNT here
 };
 
@@ -24,7 +22,8 @@ struct Instance {
 
 struct VertexOut {
     @builtin(position) position_clip: vec4<f32>,
-    @location(0) color: vec3<f32>,
+    @location(0) normal: vec3<f32>,
+    @location(1) world_pos: vec3<f32>,
 }
 
 @group(0) @binding(0) var<uniform> global: GlobalUniform;
@@ -48,13 +47,19 @@ fn vs(
     // 2. Apply rotation using quaternion
     transformed_position = quat_rotate(instance.rotation, transformed_position);
 
+    // Transform the normal vector as well
+    var transformed_normal = quat_rotate(instance.rotation, normal);
+
     // 3. Translate the vertex position
     transformed_position = transformed_position + instance.position;
 
     // 4. Apply the camera/projection transformation
     output.position_clip = vec4(transformed_position, 1.0) * global.camera_matrix;
 
-    output.color = normal;
+    // Pass world position and normal to fragment shader
+    output.world_pos = transformed_position;
+    output.normal = normalize(transformed_normal);
+
     return output;
 }
 
@@ -62,9 +67,53 @@ fn vs(
 @group(0) @binding(3) var image_sampler: sampler;
 @fragment
 fn fs(
-    @location(0) color: vec3<f32>,
+    @location(0) normal: vec3<f32>,
+    @location(1) world_pos: vec3<f32>,
 ) -> @location(0) vec4<f32> {
-    return vec4(color, 1.0);
+    // Base material properties
+    let material_diffuse = vec3<f32>(0.8, 0.9, 1.0); // Bluish material
+    let material_specular = vec3<f32>(1.0);
+    let material_shininess = 2.0;
+    let ambient_factor = 0.0;
+
+    // Initialize ambient component
+    var result = ambient_factor * material_diffuse;
+
+    let view_dir = normalize(global.camera_position - world_pos);
+
+    // Process each sound as a point light
+    for (var i: u32 = 0; i < global.sound_count; i++) {
+        let sound = global.sound_instances[i];
+
+        // Create a point light from the sound
+        let sound_source = SoundSource(
+            sound.position,               // position
+            vec3<f32>(0.8, 0.9, 1.0),     // color
+            100.0,                          // intensity
+            3000.0,                        // range
+            1.0,                          // constant
+            0.5,                         // linear
+            0.001                         // quadratic
+        );
+
+        // Add light contribution
+        result += calculateEcholocation(
+            sound_source,
+            sound,
+            world_pos,
+            normal,
+            view_dir,
+            material_diffuse,
+            material_specular,
+            material_shininess
+        );
+    }
+
+    // Apply tone mapping and gamma correction
+    result = result / (result + vec3<f32>(1.0)); // Simple Reinhard tone mapping
+    result = pow(result, vec3<f32>(1.0/2.2));    // Gamma correction
+
+    return vec4<f32>(result, 1.0);
 }
 
 // Apply quaternion rotation to a vector
@@ -76,4 +125,122 @@ fn quat_rotate(q: vec4<f32>, v: vec3<f32>) -> vec3<f32> {
 
     // Formula: v' = v + 2 * cross(u, cross(u, v) + s*v)
     return v + 2.0 * cross(u, cross(u, v) + s * v);
+}
+
+struct SoundSource {
+    position: vec3<f32>,
+    color: vec3<f32>,
+    intensity: f32,
+    range: f32,
+    // Optional: attenuation factors
+    constant: f32,
+    linear: f32,
+    quadratic: f32,
+}
+
+fn calculateEcholocation(sound_source: SoundSource, sound: SoundInstanceData,
+                         fragment_position: vec3<f32>, normal: vec3<f32>,
+                         view_direction: vec3<f32>, material_diffuse: vec3<f32>,
+                         material_specular: vec3<f32>, shininess: f32) -> vec3<f32> {
+    // Calculate sound direction and distances
+    let sound_dir = normalize(sound_source.position - fragment_position);
+
+    // Distance from sound source to fragment AND from fragment to camera
+    // This models the round-trip of the sound wave
+    let distance = length(sound_source.position - fragment_position) +
+                  length(fragment_position - global.camera_position);
+
+    // Check if fragment is within detectable range
+    if (distance > sound_source.range) {
+        return vec3<f32>(0.0);
+    }
+
+    // Calculate sound intensity from texture
+    let sound_intensity = getSoundIntensity(sound, distance);
+
+    // Calculate attenuation based on total sound travel distance
+    let attenuation = sound_source.intensity * sound_intensity /
+                    (sound_source.constant + sound_source.linear * distance +
+                     sound_source.quadratic * distance * distance);
+
+    // Calculate how much sound energy gets reflected toward camera
+    // The angle between normal and view direction affects this
+    let reflection_factor = max(dot(normal, view_direction), 0.0);
+
+    // Use diffuse component to model omnidirectional scattering of sound
+    let diff = max(dot(normal, sound_dir), 0.0);
+    let diffuse = diff * material_diffuse;
+
+    // We can keep specular to represent sharper reflections off flat surfaces
+    // (like how sound bounces more directionally off flat walls)
+    let reflect_dir = reflect(-sound_dir, normal);
+    let spec = pow(max(dot(view_direction, reflect_dir), 0.0), shininess);
+    let specular = spec * material_specular;
+
+    // Return the combined effect, influenced by reflection factor
+    return (diffuse + specular) * attenuation * sound_source.color * reflection_factor;
+}
+
+// Updated function with distance parameter
+fn getSoundIntensity(sound: SoundInstanceData, distance: f32) -> f32 {
+    const SOUND_SPEED = 300.0; // meters per second
+    const SAMPLE_RATE = 48000.0; // samples per second
+
+    // Calculate time delay in samples
+    let delay_samples = (distance / SOUND_SPEED) * SAMPLE_RATE;
+
+    // Calculate the effective frame we should sample from
+    // We need to look at earlier samples for more distant points
+    let current_frame = sound.current_frame;
+    let delay_frames = u32(delay_samples);
+
+    // Safely calculate the frame to sample (prevent underflow)
+    var sample_frame: u32;
+    if (current_frame > delay_frames) {
+        sample_frame = current_frame - delay_frames;
+    } else {
+        sample_frame = 0u;
+    }
+    // Calculate the texture dimensions
+    let texture_width = i32(textureDimensions(image).x);
+    let texture_height = i32(textureDimensions(image).y);
+
+    // Calculate sample position in the byte array
+    let sample_position = sound.offset + (sample_frame % sound.size);
+
+    // Since each texel holds 4 bytes, divide by 4 to get texel index
+    let texel_index = sample_position / 4u;
+
+    // Calculate which component we need (0=R, 1=G, 2=B, 3=A)
+    let component_index = sample_position % 4u;
+
+    // Calculate 2D texel coordinates
+    let texel_x = i32(texel_index % u32(texture_width));
+    let texel_y = i32(texel_index / u32(texture_width));
+
+    // Early return for out-of-bounds access
+    if (texel_x < 0 || texel_x >= texture_width || texel_y < 0 || texel_y >= texture_height) {
+        return 0.0;
+    }
+
+    // Load the texel
+    let texel = textureLoad(image, vec2<i32>(texel_x, texel_y), 0);
+
+    // Select the correct component (R, G, B, or A)
+    var raw_value: f32;
+    switch(component_index) {
+        case 0u: { raw_value = texel.r; }
+        case 1u: { raw_value = texel.g; }
+        case 2u: { raw_value = texel.b; }
+        case 3u: { raw_value = texel.a; }
+        default: { raw_value = 0.0; }
+    }
+
+    // Filter low values
+    if (raw_value < 0.01) {
+        return 0;
+    }
+
+    // Convert from normalized [0,1] to intensity
+    return raw_value;
 }
