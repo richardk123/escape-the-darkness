@@ -31,6 +31,7 @@ struct VertexOut {
 @vertex
 fn vs(
     @builtin(instance_index) instanceIndex: u32,
+    @builtin(vertex_index) vertexIndex: u32,
     @location(0) position: vec3<f32>,
     @location(1) normal: vec3<f32>,
     @location(2) uv: vec2<f32>,
@@ -40,9 +41,13 @@ fn vs(
     // Get instance data
     let instance = instances[instanceIndex];
 
-    // Apply instance transformation
-    // 1. Scale the vertex position
-    var transformed_position = position * instance.scale;
+    // Calculate sound-based scaling factor
+    let sound_scale_factor = calculateSoundScaleFactor(instance.position);
+
+    // Apply instance transformation with sound-based scaling
+    // 1. Scale the vertex position - now with additional sound-based scaling
+    let scale = vec3<f32>(instance.scale.x, instance.scale.y * (1.0 + sound_scale_factor), instance.scale.z);
+    var transformed_position = position * scale;
 
     // 2. Apply rotation using quaternion
     transformed_position = quat_rotate(instance.rotation, transformed_position);
@@ -243,4 +248,79 @@ fn getSoundIntensity(sound: SoundInstanceData, distance: f32) -> f32 {
 
     // Convert from normalized [0,1] to intensity
     return raw_value;
+}
+
+
+// Function to displace vertices based on sound
+fn applySoundDisplacement(position: vec3<f32>, normal: vec3<f32>) -> vec3<f32> {
+    var displaced_position = position;
+    var total_displacement_factor = 0.0;
+
+    // Process each sound source
+    for (var i: u32 = 0; i < global.sound_count; i++) {
+        let sound = global.sound_instances[i];
+
+        // Calculate distance from vertex to sound source
+        let distance_to_sound = length(sound.position - position);
+
+        // Skip if too far
+        if (distance_to_sound > 300.0) {
+            continue;
+        }
+
+        // Get sound intensity based on distance
+        let intensity = getSoundIntensity(sound, distance_to_sound);
+
+        // Calculate displacement amount
+        // - Decreases with distance
+        // - Increases with sound intensity
+        let displacement_factor = intensity * max(0.0, 1.0 - distance_to_sound / 300.0);
+
+        // Accumulate displacement factor from all sounds
+        total_displacement_factor += displacement_factor;
+    }
+
+    // Calculate displacement direction from center to vertex
+    // Note: Since we're working in local space before instance transforms,
+    // the direction from center is just the position itself
+    let direction_from_center = normalize(position);
+
+    // Apply displacement along direction from center
+    let displacement_scale = 2.0; // Adjust this value for stronger/weaker effect
+    displaced_position += direction_from_center * total_displacement_factor * displacement_scale;
+
+    return displaced_position;
+}
+
+// New function to calculate sound-based scaling
+fn calculateSoundScaleFactor(position: vec3<f32>) -> f32 {
+    var total_scale_factor = 0.0;
+
+    // Process each sound source
+    for (var i: u32 = 0; i < global.sound_count; i++) {
+        let sound = global.sound_instances[i];
+
+        // Calculate distance from object to sound source
+        let distance_to_sound = length(sound.position - position);
+
+        // Skip if too far
+        if (distance_to_sound > 300.0) {
+            continue;
+        }
+
+        // Get sound intensity based on distance
+        let intensity = getSoundIntensity(sound, distance_to_sound);
+
+        // Calculate scale amount
+        // - Decreases with distance
+        // - Increases with sound intensity
+        let scale_factor = intensity * max(0.0, 1.0 - distance_to_sound / 300.0);
+
+        // Accumulate scale factor from all sounds
+        total_scale_factor += scale_factor;
+    }
+
+    // Limit maximum scale and apply scale multiplier
+    let scale_multiplier = 0.5; // Adjust this for stronger/weaker scaling
+    return min(total_scale_factor * scale_multiplier, 2.0); // Maximum 2x scaling
 }

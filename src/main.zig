@@ -40,7 +40,7 @@ pub fn main() !void {
     defer grid_data.deinit();
     // const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
 
-    const monkey_mesh = try meshes.loadMesh("monkey_smooth.gltf");
+    const monkey_mesh = try meshes.loadMesh("cube.gltf");
     const plane_mesh = try meshes.loadMesh("plane.gltf");
     const terrain_mesh = try meshes.loadMesh("terrain.gltf");
 

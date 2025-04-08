@@ -10,6 +10,7 @@ pub const SoundFile = enum {
     music,
     blip,
     water_drop,
+    explosion_medium,
     // Returns the file path for each sound
     pub fn getPath(self: SoundFile) [:0]const u8 {
         return switch (self) {
@@ -18,6 +19,7 @@ pub const SoundFile = enum {
             .music => "content/sound/sample.wav",
             .blip => "content/sound/Blip_Select8.wav",
             .water_drop => "content/sound/water-drop.wav",
+            .explosion_medium => "content/sound/medium-explosion.wav",
         };
     }
 };
@@ -38,15 +40,22 @@ pub const SoundDatas = struct {
 
         var offset: u32 = 0;
         for (std.enums.values(SoundFile)) |sound_file| {
+            // Decode the raw WAV data
             const raw_data = try WavDecoder.decodeWav(allocator, sound_file.getPath());
             defer allocator.free(raw_data);
-            const size = @as(u32, @intCast(raw_data.len));
+
+            // Smooth the audio data before storing it
+            const smoothed_data = try smoothAmplitudeData(allocator, raw_data);
+            defer allocator.free(smoothed_data);
+
+            const size = @as(u32, @intCast(smoothed_data.len));
             try sounds.append(SoundData{
                 .size = size,
                 .offset = offset,
                 .sound_file = sound_file,
             });
-            try sounds_texture_data.appendSlice(raw_data);
+
+            try sounds_texture_data.appendSlice(smoothed_data);
             offset += size;
         }
 
@@ -67,6 +76,43 @@ pub const SoundDatas = struct {
             .sounds_texture_data = sounds_texture_data,
             .sounds = sounds,
         };
+    }
+
+    fn smoothAmplitudeData(allocator: std.mem.Allocator, raw_data: []const u8) ![]u8 {
+        // Create a buffer for the smoothed data
+        var smoothed = try allocator.alloc(u8, raw_data.len);
+
+        // Constants for envelope following (adjust these to your preference)
+        const attack_time: f32 = 0.005; // Fast attack to catch transients (in seconds)
+        const release_time: f32 = 0.05; // Slower release for smoother decay (in seconds)
+
+        // Convert to coefficients assuming 48kHz sample rate
+        // Adjust these values based on your actual sample rate
+        const sample_rate: f32 = 48000.0;
+        const attack_coef = std.math.exp(-1.0 / (attack_time * sample_rate));
+        const release_coef = std.math.exp(-1.0 / (release_time * sample_rate));
+
+        // Initialize envelope with first sample
+        var envelope: f32 = if (raw_data.len > 0) @floatFromInt(raw_data[0]) else 0.0;
+
+        // Process each sample
+        for (raw_data, 0..) |sample, i| {
+            const sample_value: f32 = @floatFromInt(sample);
+
+            // Envelope follower with different attack/release times
+            if (sample_value > envelope) {
+                // Fast attack for rising signals
+                envelope = attack_coef * envelope + (1.0 - attack_coef) * sample_value;
+            } else {
+                // Slower release for falling signals
+                envelope = release_coef * envelope + (1.0 - release_coef) * sample_value;
+            }
+
+            // Store the result
+            smoothed[i] = @intFromFloat(std.math.clamp(envelope, 0.0, 255.0));
+        }
+
+        return smoothed;
     }
 
     pub fn findSoundData(self: SoundDatas, sound_file: SoundFile) SoundData {
