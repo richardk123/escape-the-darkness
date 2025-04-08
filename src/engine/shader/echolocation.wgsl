@@ -46,8 +46,10 @@ fn vs(
 
     // Apply instance transformation with sound-based scaling
     // 1. Scale the vertex position - now with additional sound-based scaling
-    let scale = vec3<f32>(instance.scale.x, instance.scale.y * (1.0 + sound_scale_factor), instance.scale.z);
-    var transformed_position = position * scale;
+    // let scale = vec3<f32>(instance.scale.x, instance.scale.y, instance.scale.z)
+
+    var transformed_position = position * instance.scale;
+    transformed_position.y += sound_scale_factor;
 
     // 2. Apply rotation using quaternion
     transformed_position = quat_rotate(instance.rotation, transformed_position);
