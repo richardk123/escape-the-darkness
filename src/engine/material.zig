@@ -3,7 +3,7 @@ const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
 const GPULayout = @import("common/layout.zig").GPULayout;
-const Instance = @import("mesh_instance.zig").Instance;
+const MeshInstance = @import("mesh_renderer.zig").MeshInstance;
 const Engine = @import("engine.zig").Engine;
 const GlobalUniform = @import("global_uniform.zig").GlobalUniform;
 
@@ -34,7 +34,7 @@ pub fn Material(comptime T: type) type {
 
             const bind_group = gctx.createBindGroup(bind_group_layout, &.{
                 .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = @sizeOf(GlobalUniform) },
-                .{ .binding = 1, .buffer_handle = instance_buffer.gpu_buffer, .offset = 0, .size = (@sizeOf(Instance) * instance_buffer.total_number) },
+                .{ .binding = 1, .buffer_handle = instance_buffer.gpu_buffer, .offset = 0, .size = (@sizeOf(MeshInstance) * instance_buffer.total_number) },
                 .{ .binding = 2, .texture_view_handle = sounds_texture.texture_view },
                 .{ .binding = 3, .sampler_handle = sounds_texture.sampler },
             });

@@ -41,20 +41,20 @@ pub fn main() !void {
     const echolocation_material = engine.createMaterial(echolocation_shader);
     const debug_sound_material = engine.createMaterial(debug_sound_texture_shader);
 
-    var monkey = engine.addMeshInstance(&echolocation_material, MeshType.monkey);
+    var monkey = engine.addMeshRenderer(&echolocation_material, MeshType.monkey);
     for (0..5) |i| {
         const dist: f32 = @floatFromInt(i + 1);
         monkey.addInstance(.{ .position = .{ dist * dist, 2.0, dist * -10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
         monkey.addInstance(.{ .position = .{ -dist * dist, 2.0, dist * -10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
     }
 
-    var plane_echo = engine.addMeshInstance(&echolocation_material, MeshType.plane);
+    var plane_echo = engine.addMeshRenderer(&echolocation_material, MeshType.plane);
     plane_echo.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 5000, 5000, 5000 } });
 
-    var terrain = engine.addMeshInstance(&echolocation_material, MeshType.terrain);
+    var terrain = engine.addMeshRenderer(&echolocation_material, MeshType.terrain);
     terrain.addInstance(.{ .position = .{ 0.0, 0.0, -50.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
-    var debiug_sound_quad = engine.addMeshInstance(&debug_sound_material, MeshType.plane);
+    var debiug_sound_quad = engine.addMeshRenderer(&debug_sound_material, MeshType.plane);
     debiug_sound_quad.addInstance(.{ .position = .{ 0.0, 0.1, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
     var free_camera = FreeCamera.init(&engine);

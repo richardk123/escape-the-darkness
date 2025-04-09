@@ -39,6 +39,8 @@ pub const Meshes = struct {
     indices: std.ArrayList(u32),
 
     pub fn init(allocator: std.mem.Allocator) !Meshes {
+        zmesh.init(allocator);
+
         var meshes = Meshes{
             .allocator = allocator,
             .meshes = std.ArrayList(Mesh).init(allocator),
@@ -46,7 +48,6 @@ pub const Meshes = struct {
             .indices = std.ArrayList(u32).init(allocator),
         };
 
-        // load all mesh files
         inline for (comptime std.enums.values(MeshType)) |mesh_type| {
             try meshes.loadMesh(mesh_type.getName());
         }
@@ -55,9 +56,6 @@ pub const Meshes = struct {
     }
 
     fn loadMesh(self: *Meshes, comptime mesh_file: [:0]const u8) !void {
-        zmesh.init(self.allocator);
-        defer zmesh.deinit();
-
         const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ mesh_file ++ ".gltf");
         defer zmesh.io.zcgltf.freeData(data);
 
@@ -91,7 +89,8 @@ pub const Meshes = struct {
             .num_vertices = @as(u32, @intCast(mesh_positions.items.len)),
         });
 
-        try self.vertices.ensureTotalCapacity(mesh_positions.items.len);
+        // Try with capacity reservation to avoid multiple allocations
+        try self.vertices.ensureTotalCapacity(self.vertices.items.len + mesh_positions.items.len);
         for (mesh_positions.items, 0..) |_, index| {
             const vertex_uv = if (index < uv.items.len)
                 uv.items[index]
@@ -104,15 +103,14 @@ pub const Meshes = struct {
             });
         }
 
-        try self.indices.ensureTotalCapacity(mesh_indices.items.len);
-        for (mesh_indices.items) |mesh_index| {
-            try self.indices.append(mesh_index);
-        }
+        // appe
+        try self.indices.appendSlice(mesh_indices.items);
     }
 
     pub fn deinit(self: *Meshes) void {
         self.meshes.deinit();
         self.vertices.deinit();
         self.indices.deinit();
+        zmesh.deinit();
     }
 };
