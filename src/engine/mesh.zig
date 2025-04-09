@@ -46,7 +46,8 @@ pub const Meshes = struct {
             .indices = std.ArrayList(u32).init(allocator),
         };
 
-        inline for (comptime std.meta.tags(MeshType)) |mesh_type| {
+        // load all mesh files
+        inline for (comptime std.enums.values(MeshType)) |mesh_type| {
             try meshes.loadMesh(mesh_type.getName());
         }
 
