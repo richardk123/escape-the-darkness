@@ -2,6 +2,23 @@ const std = @import("std");
 const zmesh = @import("zmesh");
 const expect = std.testing.expect;
 
+// Enum of predefined sound files
+pub const MeshType = enum {
+    cube,
+    monkey,
+    plane,
+    terrain,
+    // Returns the file path for each sound
+    pub fn getName(self: MeshType) [:0]const u8 {
+        return switch (self) {
+            .cube => "cube",
+            .monkey => "monkey",
+            .plane => "plane",
+            .terrain => "terrain",
+        };
+    }
+};
+
 pub const Vertex = extern struct {
     position: [3]f32,
     normal: [3]f32,
@@ -22,19 +39,25 @@ pub const Meshes = struct {
     indices: std.ArrayList(u32),
 
     pub fn init(allocator: std.mem.Allocator) !Meshes {
-        return Meshes{
+        var meshes = Meshes{
             .allocator = allocator,
             .meshes = std.ArrayList(Mesh).init(allocator),
             .vertices = std.ArrayList(Vertex).init(allocator),
             .indices = std.ArrayList(u32).init(allocator),
         };
+
+        inline for (comptime std.meta.tags(MeshType)) |mesh_type| {
+            try meshes.loadMesh(mesh_type.getName());
+        }
+
+        return meshes;
     }
 
-    pub fn loadMesh(self: *Meshes, comptime mesh_file: [:0]const u8) !usize {
+    fn loadMesh(self: *Meshes, comptime mesh_file: [:0]const u8) !void {
         zmesh.init(self.allocator);
         defer zmesh.deinit();
 
-        const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ mesh_file);
+        const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ mesh_file ++ ".gltf");
         defer zmesh.io.zcgltf.freeData(data);
 
         var mesh_indices = std.ArrayList(u32).init(self.allocator);
@@ -84,32 +107,6 @@ pub const Meshes = struct {
         for (mesh_indices.items) |mesh_index| {
             try self.indices.append(mesh_index);
         }
-        return self.meshes.items.len - 1;
-    }
-
-    pub fn addGeneratedMesh(self: *Meshes, vertices_data: []const Vertex, indices_data: []const u32) !usize {
-        const pre_indices_len = self.indices.items.len;
-        const pre_vertices_len = self.vertices.items.len;
-
-        const mesh: Mesh = .{
-            .index_offset = @as(u32, @intCast(pre_indices_len)),
-            .vertex_offset = @as(i32, @intCast(pre_vertices_len)),
-            .num_indices = @as(u32, @intCast(indices_data.len)),
-            .num_vertices = @as(u32, @intCast(vertices_data.len)),
-        };
-        // Create new mesh entry
-        try self.meshes.append(mesh);
-
-        // Add vertices
-        try self.vertices.appendSlice(vertices_data);
-
-        // Add indices
-        try self.indices.appendSlice(indices_data);
-
-        std.debug.print("dynamic mesh: num_vertices {} num_indices {} \n\n", .{ mesh.num_vertices, mesh.num_indices });
-
-        // Return the index of the new mesh
-        return self.meshes.items.len - 1;
     }
 
     pub fn deinit(self: *Meshes) void {

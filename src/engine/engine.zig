@@ -21,7 +21,7 @@ pub const Engine = struct {
     allocator: std.mem.Allocator,
     window: *zglfw.Window,
     renderer: Renderer,
-    meshes: *mesh.Meshes,
+    meshes: mesh.Meshes,
     mesh_instances: MeshInstances,
     vertex_buffer: GPUBuffer(mesh.Vertex),
     index_buffer: GPUBuffer(u32),
@@ -31,9 +31,10 @@ pub const Engine = struct {
     global_uniform: GlobalUniform,
     sound_manager: sm.SoundManager,
 
-    pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window, meshes: *mesh.Meshes) !Engine {
+    pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window) !Engine {
         const renderer = try Renderer.init(allocator, window);
         const gctx = renderer.gctx;
+        const meshes = try mesh.Meshes.init(allocator);
 
         // Create a vertex buffer.
         const total_num_vertices = @as(u32, @intCast(meshes.vertices.items.len));
@@ -76,7 +77,8 @@ pub const Engine = struct {
         };
     }
 
-    pub fn addMeshInstance(self: *Engine, material: *const Material(mesh.Vertex), mesh_index: usize) *MeshInstance {
+    pub fn addMeshInstance(self: *Engine, material: *const Material(mesh.Vertex), mesh_file: mesh.MeshType) *MeshInstance {
+        const mesh_index = @as(usize, @intFromEnum(mesh_file));
         return self.mesh_instances.add(material, mesh_index);
     }
 

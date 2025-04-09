@@ -3,7 +3,7 @@ const zaudio = @import("zaudio");
 const Constants = @import("../common//constants.zig");
 const WavDecoder = @import("wav_decoder.zig");
 
-// Define the enum of predefined sound files
+// Enum of predefined sound files
 pub const SoundFile = enum {
     deep,
     rumble,

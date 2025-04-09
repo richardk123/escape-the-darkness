@@ -3,9 +3,8 @@ const zglfw = @import("zglfw");
 const GUI = @import("gui.zig").GUI;
 const window_title = "Escape the darkness";
 
-const Meshes = @import("engine/mesh.zig").Meshes;
+const MeshType = @import("engine/mesh.zig").MeshType;
 const Engine = @import("engine/engine.zig").Engine;
-const Grid = @import("engine/mesh/grid.zig").Grid;
 const FreeCamera = @import("utils/camera_free.zig").FreeCamera;
 
 const echolocation_shader = @embedFile("engine/shader/echolocation.wgsl");
@@ -33,18 +32,7 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    var meshes = try Meshes.init(allocator);
-    defer meshes.deinit();
-
-    const grid_data = try Grid.init(allocator, 100, 1.0);
-    defer grid_data.deinit();
-    // const grid_mesh = try meshes.addGeneratedMesh(grid_data.vertices.items, grid_data.indices.items);
-
-    const monkey_mesh = try meshes.loadMesh("cube.gltf");
-    const plane_mesh = try meshes.loadMesh("plane.gltf");
-    const terrain_mesh = try meshes.loadMesh("terrain.gltf");
-
-    var engine = try Engine.init(allocator, window, &meshes);
+    var engine = try Engine.init(allocator, window);
     defer engine.deinit();
 
     var gui = GUI.init(allocator, window, &engine);
@@ -52,25 +40,21 @@ pub fn main() !void {
 
     const echolocation_material = engine.createMaterial(echolocation_shader);
     const debug_sound_material = engine.createMaterial(debug_sound_texture_shader);
-    // const debug_material = engine.createMaterialDebug(debug_shader);
 
-    var monkey = engine.addMeshInstance(&echolocation_material, monkey_mesh);
+    var monkey = engine.addMeshInstance(&echolocation_material, MeshType.monkey);
     for (0..5) |i| {
         const dist: f32 = @floatFromInt(i + 1);
         monkey.addInstance(.{ .position = .{ dist * dist, 2.0, dist * -10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
         monkey.addInstance(.{ .position = .{ -dist * dist, 2.0, dist * -10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
     }
 
-    var plane_echo = engine.addMeshInstance(&echolocation_material, plane_mesh);
+    var plane_echo = engine.addMeshInstance(&echolocation_material, MeshType.plane);
     plane_echo.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 5000, 5000, 5000 } });
 
-    var terrain = engine.addMeshInstance(&echolocation_material, terrain_mesh);
+    var terrain = engine.addMeshInstance(&echolocation_material, MeshType.terrain);
     terrain.addInstance(.{ .position = .{ 0.0, 0.0, -50.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
-    // const grid = engine.addMeshInstance(&debug_material, grid_mesh);
-    // grid.addInstance(.{ .position = .{ 0.0, 0.2, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-
-    var debiug_sound_quad = engine.addMeshInstance(&debug_sound_material, plane_mesh);
+    var debiug_sound_quad = engine.addMeshInstance(&debug_sound_material, MeshType.plane);
     debiug_sound_quad.addInstance(.{ .position = .{ 0.0, 0.1, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
     var free_camera = FreeCamera.init(&engine);
