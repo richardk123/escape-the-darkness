@@ -24,7 +24,7 @@ pub fn decodeWav(allocator: std.mem.Allocator, file_path: []const u8) ![]u8 {
     var header: WavHeader = undefined;
     try reader.readNoEof(std.mem.asBytes(&header));
 
-    std.debug.print("reading file {s} -> chunk size {} num channels {} block_align {}\n", .{ file_path, header.chunk_size, header.num_channels, header.block_align });
+    std.debug.print("sound file {s} -> chunk size {} num channels {} block_align {}\n", .{ file_path, header.chunk_size, header.num_channels, header.block_align });
 
     // Read PCM data
     const pcmData = try allocator.alloc(u8, header.subchunk2_size);

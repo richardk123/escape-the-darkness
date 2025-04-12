@@ -1,23 +1,19 @@
 const std = @import("std");
 const zaudio = @import("zaudio");
-const Constants = @import("../common//constants.zig");
+const Constants = @import("../common/constants.zig");
 const WavDecoder = @import("wav_decoder.zig");
 
 // Enum of predefined sound files
 pub const SoundFile = enum {
     deep,
-    rumble,
     music,
-    blip,
     water_drop,
     explosion_medium,
     // Returns the file path for each sound
     pub fn getPath(self: SoundFile) [:0]const u8 {
         return switch (self) {
             .deep => "content/sound/80hz.wav",
-            .rumble => "content/sound/sin.wav",
             .music => "content/sound/sample.wav",
-            .blip => "content/sound/Blip_Select8.wav",
             .water_drop => "content/sound/water-drop.wav",
             .explosion_medium => "content/sound/medium-explosion.wav",
         };

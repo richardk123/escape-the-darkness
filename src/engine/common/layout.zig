@@ -38,6 +38,7 @@ pub fn GPULayout(comptime T: type) type {
                         switch (array_info.len) {
                             2 => return wgpu.VertexFormat.float32x2,
                             3 => return wgpu.VertexFormat.float32x3,
+                            4 => return wgpu.VertexFormat.float32x4,
                             else => @compileError("Unsupported array length for field: " ++ field.name),
                         }
                     } else {

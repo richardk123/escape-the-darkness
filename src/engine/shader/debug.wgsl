@@ -8,11 +8,12 @@ struct SoundInstanceData {
 };
 
 struct GlobalUniform {
-    camera_matrix: mat4x4<f32>,
+    world_to_clip: mat4x4<f32>,
+    object_to_world: mat4x4<f32>,
     camera_position: vec3<f32>,
     sound_count: u32,
     sound_instances: array<SoundInstanceData, 16>, // Use your MAX_SOUND_COUNT here
-}
+};
 
 struct Instance {
     position: vec3<f32>,
@@ -32,6 +33,7 @@ fn vs(
     @location(0) position: vec3<f32>,
     @location(1) normal: vec3<f32>,
     @location(2) uv: vec2<f32>,
+    @location(3) tangent: vec4<f32>,
 ) -> VertexOut {
     // Get instance data
     let instance = instances[instanceIndex];

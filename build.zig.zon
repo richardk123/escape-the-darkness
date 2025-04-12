@@ -18,6 +18,11 @@
             .url = "https://github.com/zig-gamedev/zaudio/archive/1d55b813e090271d2774a7637ec3c077a2847c43.tar.gz",
             .hash = "1220b4c7d7a2e6f0ac3a6bf5cd52d2adf73b18d131c9290290f7fb380d54ad12ee61",
         },
+        // loading textures
+        .zstbi = .{
+            .url = "https://github.com/zig-gamedev/zstbi/archive/bcbd249f3f57fb84d6d76f1bc621c7bd3bfaa4a2.tar.gz",
+            .hash = "12208b7d15a730294a7d8ee3a9d3ef145e109f94d0a68be7f0ee282e0630ede093d5",
+        },
         // Zig build package and bindings for Dear Imgui & extras.
         .zgui = .{
             .url = "https://github.com/zig-gamedev/zgui/archive/655a123f5da273f5e745d587d42ac652b3ca441e.tar.gz",

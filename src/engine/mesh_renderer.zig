@@ -1,10 +1,15 @@
 const std = @import("std");
 const zgpu = @import("zgpu");
 
+const Engine = @import("engine.zig").Engine;
 const Material = @import("material.zig").Material;
+const MaterialType = @import("material.zig").MaterialType;
 const Vertex = @import("mesh.zig").Vertex;
+const Mesh = @import("mesh.zig").Mesh;
+const MeshType = @import("mesh.zig").MeshType;
 const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
 const Constants = @import("./common//constants.zig");
+const ModelTexture = @import("common/texture.zig").ModelTexture;
 
 pub const MeshInstance = struct {
     position: [3]f32,
@@ -20,11 +25,11 @@ pub const MeshRenderers = struct {
 
     pub fn init(allocator: std.mem.Allocator) !MeshRenderers {
         const mesh_instances = try std.ArrayList(MeshRenderer).initCapacity(allocator, Constants.INITIAL_MESH_INSTANCE_COUNT);
-        return MeshRenderers{ .mesh_renderers = mesh_instances, .allocator = allocator };
+        return MeshRenderers{ .allocator = allocator, .mesh_renderers = mesh_instances };
     }
 
-    pub fn add(self: *MeshRenderers, material: *const Material(Vertex), mesh_index: usize) *MeshRenderer {
-        const mi = MeshRenderer.init(self.allocator, material, mesh_index) catch |err| {
+    pub fn add(self: *MeshRenderers, engine: *Engine, material_type: MaterialType, comptime mesh_type: MeshType) *MeshRenderer {
+        const mi = MeshRenderer.init(engine, material_type, mesh_type) catch |err| {
             std.debug.panic("Failed to create mesh instance: {s}", .{@errorName(err)});
         };
         self.mesh_renderers.append(mi) catch |err| {
@@ -54,15 +59,24 @@ pub const MeshRenderers = struct {
 };
 
 pub const MeshRenderer = struct {
-    material: *const Material(Vertex),
+    material: Material(Vertex),
+    normal_texture: ModelTexture,
     mesh_index: usize,
     instances: std.ArrayList(MeshInstance),
     // offset used for mesh_instance_buffer
     offset: usize = 0,
 
-    pub fn init(allocator: std.mem.Allocator, material: *const Material(Vertex), mesh_index: usize) !MeshRenderer {
-        const instances = try std.ArrayList(MeshInstance).initCapacity(allocator, Constants.MAX_INSTANCE_COUNT);
-        return MeshRenderer{ .material = material, .mesh_index = mesh_index, .instances = instances };
+    pub fn init(engine: *Engine, material_type: MaterialType, comptime mesh_type: MeshType) !MeshRenderer {
+        const mesh_index = @as(usize, @intFromEnum(mesh_type));
+        const normal_texture = try ModelTexture.init(engine.renderer.gctx, mesh_type.getNormalTextureName());
+        const material = switch (material_type) {
+            .echolocation => Material(Vertex).init(engine, material_type, .triangle_list, &normal_texture),
+            .wireframe => Material(Vertex).init(engine, material_type, .line_list, null),
+            .sound_texture => Material(Vertex).init(engine, material_type, .triangle_list, null),
+        };
+
+        const instances = try std.ArrayList(MeshInstance).initCapacity(engine.allocator, Constants.MAX_INSTANCE_COUNT);
+        return MeshRenderer{ .material = material, .mesh_index = mesh_index, .normal_texture = normal_texture, .instances = instances };
     }
 
     pub fn addInstance(self: *MeshRenderer, instance: MeshInstance) void {

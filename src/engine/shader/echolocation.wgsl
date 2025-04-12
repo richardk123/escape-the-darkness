@@ -8,7 +8,8 @@ struct SoundInstanceData {
 };
 
 struct GlobalUniform {
-    camera_matrix: mat4x4<f32>,
+    world_to_clip: mat4x4<f32>,
+    object_to_world: mat4x4<f32>,
     camera_position: vec3<f32>,
     sound_count: u32,
     sound_instances: array<SoundInstanceData, 16>, // Use your MAX_SOUND_COUNT here
@@ -24,6 +25,8 @@ struct VertexOut {
     @builtin(position) position_clip: vec4<f32>,
     @location(0) normal: vec3<f32>,
     @location(1) world_pos: vec3<f32>,
+    @location(2) uv: vec2<f32>,          // UV coordinates
+    @location(3) tangent: vec4<f32>,     // Tangent with handedness
 }
 
 @group(0) @binding(0) var<uniform> global: GlobalUniform;
@@ -35,6 +38,7 @@ fn vs(
     @location(0) position: vec3<f32>,
     @location(1) normal: vec3<f32>,
     @location(2) uv: vec2<f32>,
+    @location(3) tangent: vec4<f32>,
 ) -> VertexOut {
     var output: VertexOut;
 
@@ -46,37 +50,45 @@ fn vs(
 
     // Apply instance transformation with sound-based scaling
     // 1. Scale the vertex position - now with additional sound-based scaling
-    // let scale = vec3<f32>(instance.scale.x, instance.scale.y, instance.scale.z)
-
     var transformed_position = position * instance.scale;
-    transformed_position.y += sound_scale_factor;
+    // transformed_position.y += sound_scale_factor;
 
     // 2. Apply rotation using quaternion
     transformed_position = quat_rotate(instance.rotation, transformed_position);
 
-    // Transform the normal vector as well
+    // Transform normal and tangent
     var transformed_normal = quat_rotate(instance.rotation, normal);
+    var transformed_tangent_xyz = quat_rotate(instance.rotation, tangent.xyz);
+    let transformed_tangent = vec4<f32>(transformed_tangent_xyz, tangent.w);
 
     // 3. Translate the vertex position
     transformed_position = transformed_position + instance.position;
 
     // 4. Apply the camera/projection transformation
-    output.position_clip = vec4(transformed_position, 1.0) * global.camera_matrix;
+    output.position_clip = vec4(transformed_position, 1.0) * global.world_to_clip;
 
     // Pass world position and normal to fragment shader
     output.world_pos = transformed_position;
     output.normal = normalize(transformed_normal);
-
+    output.uv = uv;
+    output.tangent = transformed_tangent;
     return output;
 }
 
 @group(0) @binding(2) var image: texture_2d<f32>;
 @group(0) @binding(3) var image_sampler: sampler;
+@group(0) @binding(4) var normal_map: texture_2d<f32>;
+@group(0) @binding(5) var normal_map_sampler: sampler;
 @fragment
 fn fs(
     @location(0) normal: vec3<f32>,
     @location(1) world_pos: vec3<f32>,
+    @location(2) uv: vec2<f32>,
+    @location(3) tangent: vec4<f32>,
 ) -> @location(0) vec4<f32> {
+
+    // Transform tangent space normal to world space
+    let world_normal = normal_for_fragment(uv, normal, tangent);
     // Base material properties
     let material_diffuse = vec3<f32>(0.8, 0.9, 1.0); // Bluish material
     let material_specular = vec3<f32>(1.0);
@@ -123,6 +135,20 @@ fn fs(
     return vec4<f32>(result, 1.0);
 }
 
+fn normal_for_fragment(uv: vec2<f32>, normal: vec3<f32>, tangent: vec4<f32>) -> vec3<f32> {
+    // Tiling for visual detail
+    let tiled_uv = fract(uv * 3.0);
+
+    let tangent_xyz = normalize((global.object_to_world * vec4<f32>(tangent.xyz, 0.0)).xyz);
+    let normal_ws = normalize((global.object_to_world * vec4<f32>(normal, 0.0)).xyz);
+    let bitangent = normalize(cross(tangent_xyz, normal_ws) * tangent.w);
+
+    let TBN = mat3x3<f32>(tangent_xyz, bitangent, normal_ws);
+
+    let sampled_normal = textureSample(normal_map, normal_map_sampler, tiled_uv).xyz * 2.0 - 1.0;
+    return normalize(TBN * sampled_normal);
+}
+
 // Apply quaternion rotation to a vector
 fn quat_rotate(q: vec4<f32>, v: vec3<f32>) -> vec3<f32> {
     // Extract the vector part of the quaternion
@@ -157,10 +183,10 @@ fn calculateEcholocation(sound_source: SoundSource, sound: SoundInstanceData,
     let distance = length(sound_source.position - fragment_position) +
                   length(fragment_position - global.camera_position);
 
-    // Check if fragment is within detectable range
-    if (distance > sound_source.range) {
-        return vec3<f32>(0.0);
-    }
+    // // Check if fragment is within detectable range
+    // if (distance > sound_source.range) {
+    //     return vec3<f32>(0.0);
+    // }
 
     // Calculate sound intensity from texture
     let sound_intensity = getSoundIntensity(sound, distance);

@@ -1,6 +1,8 @@
 const std = @import("std");
 const zmesh = @import("zmesh");
 const expect = std.testing.expect;
+const zgpu = @import("zgpu");
+const ModelTexture = @import("common/texture.zig").ModelTexture;
 
 // Enum of predefined sound files
 pub const MeshType = enum {
@@ -11,18 +13,27 @@ pub const MeshType = enum {
     // Returns the file path for each sound
     pub fn getName(self: MeshType) [:0]const u8 {
         return switch (self) {
-            .cube => "cube",
+            .cube => "cube2",
             .monkey => "monkey",
             .plane => "plane",
             .terrain => "terrain",
         };
     }
+    pub fn getNormalTextureName(self: MeshType) [:0]const u8 {
+        return switch (self) {
+            .cube => "stone_wall_normal.png",
+            .monkey => "stone_wall_normal.png",
+            .plane => "stone_wall_normal.png",
+            .terrain => "stone_wall_normal.png",
+        };
+    }
 };
 
 pub const Vertex = extern struct {
-    position: [3]f32,
-    normal: [3]f32,
-    uv: [2]f32,
+    position: [3]f32 align(16),
+    normal: [3]f32 align(16),
+    uv: [2]f32 align(8),
+    tangent: [4]f32 align(16),
 };
 
 pub const Mesh = struct {
@@ -56,17 +67,20 @@ pub const Meshes = struct {
     }
 
     fn loadMesh(self: *Meshes, comptime mesh_file: [:0]const u8) !void {
-        const data = try zmesh.io.zcgltf.parseAndLoadFile("content/" ++ mesh_file ++ ".gltf");
+        const data = try zmesh.io.zcgltf.parseAndLoadFile("content/models/" ++ mesh_file ++ ".gltf");
         defer zmesh.io.zcgltf.freeData(data);
 
         var mesh_indices = std.ArrayList(u32).init(self.allocator);
         var mesh_positions = std.ArrayList([3]f32).init(self.allocator);
         var mesh_normals = std.ArrayList([3]f32).init(self.allocator);
         var uv = std.ArrayList([2]f32).init(self.allocator);
+        var tangents = std.ArrayList([4]f32).init(self.allocator);
+
         defer mesh_indices.deinit();
         defer mesh_positions.deinit();
         defer mesh_normals.deinit();
         defer uv.deinit();
+        defer tangents.deinit();
 
         try zmesh.io.zcgltf.appendMeshPrimitive(
             data,
@@ -76,12 +90,19 @@ pub const Meshes = struct {
             &mesh_positions,
             &mesh_normals, // normals (optional)
             &uv, // texcoords (optional)
-            null, // tangents (optional)
+            &tangents, // tangents (optional)
         );
 
+        //TODO:
+        if (std.mem.eql(u8, mesh_file, "cube2")) {
+            std.debug.print("tangents: {any} \n", .{tangents.items});
+            std.debug.print("normals: {any} \n", .{mesh_normals.items});
+            std.debug.print("uv: {any} \n", .{uv.items});
+        }
         const pre_indices_len = self.indices.items.len;
         const pre_vertices_len = self.vertices.items.len;
 
+        // Add mesh array index data
         try self.meshes.append(.{
             .index_offset = @as(u32, @intCast(pre_indices_len)),
             .vertex_offset = @as(i32, @intCast(pre_vertices_len)),
@@ -96,10 +117,16 @@ pub const Meshes = struct {
                 uv.items[index]
             else
                 .{ 0.0, 0.0 };
+            const vertex_tangent = if (index < tangents.items.len)
+                tangents.items[index]
+            else
+                .{ 1.0, 0.0, 0.0, 1.0 };
+
             try self.vertices.append(.{
                 .position = mesh_positions.items[index],
                 .normal = mesh_normals.items[index],
                 .uv = vertex_uv,
+                .tangent = vertex_tangent,
             });
         }
 

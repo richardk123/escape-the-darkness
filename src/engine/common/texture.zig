@@ -1,5 +1,6 @@
 const std = @import("std");
 const Math = @import("std").math;
+const zstbi = @import("zstbi");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 const Utils = @import("utils.zig");
@@ -69,6 +70,62 @@ pub const SoundsTexture = struct {
             .max_texture_size = max_texture_size,
         };
     }
-
     //todo free texture
+};
+
+pub const ModelTexture = struct {
+    texture: zgpu.TextureHandle,
+    texture_view: zgpu.TextureViewHandle,
+    sampler: zgpu.SamplerHandle,
+    gctx: *zgpu.GraphicsContext,
+
+    pub fn init(gctx: *zgpu.GraphicsContext, comptime texture_name: [:0]const u8) !ModelTexture {
+        const path = "content/textures/" ++ texture_name;
+        std.debug.print("loading texture: {s}\n", .{path});
+        var image = try zstbi.Image.loadFromFile(path, 4);
+        defer image.deinit();
+
+        const texture = gctx.createTexture(.{
+            .usage = .{ .texture_binding = true, .copy_dst = true },
+            .size = .{
+                .width = image.width,
+                .height = image.height,
+                .depth_or_array_layers = 1,
+            },
+            .format = zgpu.imageInfoToTextureFormat(
+                image.num_components,
+                image.bytes_per_component,
+                image.is_hdr,
+            ),
+            .mip_level_count = Math.log2_int(u32, @max(image.width, image.height)) + 1,
+        });
+        const texture_view = gctx.createTextureView(texture, .{});
+
+        gctx.queue.writeTexture(
+            .{ .texture = gctx.lookupResource(texture).? },
+            .{
+                .bytes_per_row = image.bytes_per_row,
+                .rows_per_image = image.height,
+            },
+            .{ .width = image.width, .height = image.height },
+            u8,
+            image.data,
+        );
+
+        const trilinear_sam = gctx.createSampler(.{
+            .address_mode_u = .repeat, // This is crucial for tiling
+            .address_mode_v = .repeat, // This is crucial for tiling
+            .address_mode_w = .repeat,
+            .mag_filter = .linear,
+            .min_filter = .linear,
+            .mipmap_filter = .linear,
+        });
+
+        return ModelTexture{
+            .gctx = gctx,
+            .texture = texture,
+            .texture_view = texture_view,
+            .sampler = trilinear_sam,
+        };
+    }
 };

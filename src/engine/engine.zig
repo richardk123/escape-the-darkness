@@ -2,11 +2,13 @@ const std = @import("std");
 const zglfw = @import("zglfw");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
+const zstbi = @import("zstbi");
 
 const Renderer = @import("common/renderer.zig").Renderer;
 const GPUBuffer = @import("common/buffer.zig").GPUBuffer;
-const GPUTexture = @import("common/texture.zig").SoundsTexture;
+const SoundTexture = @import("common/texture.zig").SoundsTexture;
 const Material = @import("material.zig").Material;
+const MaterialType = @import("material.zig").MaterialType;
 const mesh = @import("mesh.zig");
 const MeshRenderers = @import("mesh_renderer.zig").MeshRenderers;
 const MeshRenderer = @import("mesh_renderer.zig").MeshRenderer;
@@ -16,6 +18,7 @@ const Camera = @import("camera.zig").Camera;
 const sm = @import("sound/sound_manager.zig");
 const Utils = @import("common/utils.zig");
 const GlobalUniform = @import("global_uniform.zig").GlobalUniform;
+const ModelTexture = @import("common/texture.zig").ModelTexture;
 
 pub const Engine = struct {
     allocator: std.mem.Allocator,
@@ -26,14 +29,19 @@ pub const Engine = struct {
     vertex_buffer: GPUBuffer(mesh.Vertex),
     index_buffer: GPUBuffer(u32),
     instance_buffer: GPUBuffer(MeshInstance),
-    sounds_texture: GPUTexture,
+    sounds_texture: SoundTexture,
     camera: Camera,
     global_uniform: GlobalUniform,
     sound_manager: sm.SoundManager,
 
     pub fn init(allocator: std.mem.Allocator, window: *zglfw.Window) !Engine {
+        // Lib for loading images
+        zstbi.init(allocator);
+
         const renderer = try Renderer.init(allocator, window);
         const gctx = renderer.gctx;
+
+        // Load all defined meshes
         const meshes = try mesh.Meshes.init(allocator);
 
         // Create a vertex buffer.
@@ -56,7 +64,7 @@ pub const Engine = struct {
 
         // Create texture containing all sounds
         const sounds_data = sound_manager.data.sounds_texture_data.items;
-        const sounds_texture = GPUTexture.init(gctx, sounds_data);
+        const sounds_texture = SoundTexture.init(gctx, sounds_data);
 
         // Create instances
         const mesh_renderers = try MeshRenderers.init(allocator);
@@ -77,17 +85,8 @@ pub const Engine = struct {
         };
     }
 
-    pub fn addMeshRenderer(self: *Engine, material: *const Material(mesh.Vertex), mesh_file: mesh.MeshType) *MeshRenderer {
-        const mesh_index = @as(usize, @intFromEnum(mesh_file));
-        return self.mesh_renderers.add(material, mesh_index);
-    }
-
-    pub fn createMaterialDebug(self: *Engine, shader: [*:0]const u8) Material(mesh.Vertex) {
-        return Material(mesh.Vertex).init(self, shader, .line_list);
-    }
-
-    pub fn createMaterial(self: *Engine, shader: [*:0]const u8) Material(mesh.Vertex) {
-        return Material(mesh.Vertex).init(self, shader, .triangle_list);
+    pub fn addMeshRenderer(self: *Engine, material_type: MaterialType, comptime mesh_type: mesh.MeshType) !*MeshRenderer {
+        return self.mesh_renderers.add(self, material_type, mesh_type);
     }
 
     pub fn update(self: *Engine) !void {
@@ -146,5 +145,6 @@ pub const Engine = struct {
         self.meshes.deinit();
         self.mesh_renderers.deinit();
         self.sound_manager.deinit();
+        zstbi.deinit();
     }
 };
