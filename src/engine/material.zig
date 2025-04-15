@@ -8,7 +8,7 @@ const Engine = @import("engine.zig").Engine;
 const GlobalUniform = @import("global_uniform.zig").GlobalUniform;
 const ModelTexture = @import("common/texture.zig").ModelTexture;
 
-const echolocation_shader = @embedFile("shader/echolocation.wgsl");
+const echolocation_shader = @embedFile("shader/echolocation2.wgsl");
 const debug_shader = @embedFile("shader/debug.wgsl");
 const debug_sound_texture_shader = @embedFile("shader/debug_sound_texture.wgsl");
 

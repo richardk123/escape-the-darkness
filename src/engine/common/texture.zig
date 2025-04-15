@@ -4,6 +4,7 @@ const zstbi = @import("zstbi");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 const Utils = @import("utils.zig");
+const Renderer = @import("renderer.zig").Renderer;
 
 pub const SoundsTexture = struct {
     texture: zgpu.TextureHandle,
@@ -79,7 +80,8 @@ pub const ModelTexture = struct {
     sampler: zgpu.SamplerHandle,
     gctx: *zgpu.GraphicsContext,
 
-    pub fn init(gctx: *zgpu.GraphicsContext, comptime texture_name: [:0]const u8) !ModelTexture {
+    pub fn init(renderer: *Renderer, allocator: std.mem.Allocator, comptime texture_name: [:0]const u8) !ModelTexture {
+        const gctx = renderer.gctx;
         const path = "content/textures/" ++ texture_name;
         std.debug.print("loading texture: {s}\n", .{path});
         var image = try zstbi.Image.loadFromFile(path, 4);
@@ -110,6 +112,16 @@ pub const ModelTexture = struct {
             .{ .width = image.width, .height = image.height },
             u8,
             image.data,
+        );
+
+        var arena_state = std.heap.ArenaAllocator.init(allocator);
+        defer arena_state.deinit();
+        const arena = arena_state.allocator();
+
+        gctx.generateMipmaps(
+            arena,
+            renderer.encoder,
+            texture,
         );
 
         const trilinear_sam = gctx.createSampler(.{

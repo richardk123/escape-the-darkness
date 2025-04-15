@@ -12,7 +12,7 @@ const MaterialType = @import("material.zig").MaterialType;
 const mesh = @import("mesh.zig");
 const MeshRenderers = @import("mesh_renderer.zig").MeshRenderers;
 const MeshRenderer = @import("mesh_renderer.zig").MeshRenderer;
-const MeshInstance = @import("mesh_renderer.zig").MeshInstance;
+const MeshInstanceGPU = @import("mesh_renderer.zig").MeshInstanceGPU;
 const Constants = @import("common/constants.zig");
 const Camera = @import("camera.zig").Camera;
 const sm = @import("sound/sound_manager.zig");
@@ -28,7 +28,7 @@ pub const Engine = struct {
     mesh_renderers: MeshRenderers,
     vertex_buffer: GPUBuffer(mesh.Vertex),
     index_buffer: GPUBuffer(u32),
-    instance_buffer: GPUBuffer(MeshInstance),
+    instance_buffer: GPUBuffer(MeshInstanceGPU),
     sounds_texture: SoundTexture,
     camera: Camera,
     global_uniform: GlobalUniform,
@@ -56,7 +56,7 @@ pub const Engine = struct {
 
         // Create an instances buffer
         const instances_buffer_usage: wgpu.BufferUsage = .{ .copy_dst = true, .storage = true };
-        const instances_buffer = GPUBuffer(MeshInstance).init(gctx, instances_buffer_usage, Constants.MAX_INSTANCE_COUNT);
+        const instances_buffer = GPUBuffer(MeshInstanceGPU).init(gctx, instances_buffer_usage, Constants.MAX_INSTANCE_COUNT);
 
         // Sound Manager
         const max_texture_size_2d = Utils.findTexture2dMaxSize(gctx);
@@ -107,6 +107,11 @@ pub const Engine = struct {
 
         const uniform_mem = gctx.uniformsAllocate(GlobalUniform, 1);
         uniform_mem.slice[0] = self.global_uniform;
+
+        for (self.mesh_renderers.mesh_renderers.items) |*mi| {
+            // update model matrices
+            mi.updateAllGPUInstances();
+        }
 
         // write instance buffer
         self.mesh_renderers.writeBuffer(&self.instance_buffer);
