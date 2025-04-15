@@ -38,12 +38,12 @@ pub fn main() !void {
     var monkey = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.cube);
     for (0..5) |i| {
         const dist: f32 = @as(f32, @floatFromInt(i)) + 1.2;
-        monkey.addInstance(.{ .position = .{ dist * dist, 2.0, dist * 10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+        monkey.addInstance(.{ .position = .{ dist * dist, 2.0, dist * 10.0 + dist }, .rotation = .{ 0.45, 0, 0, 0.45 }, .scale = .{ 1, 1, 1 } });
         monkey.addInstance(.{ .position = .{ -dist * dist, 2.0, dist * 10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
     }
 
     var plane_echo = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.plane);
-    plane_echo.addInstance(.{ .position = .{ 0.0, -0.5, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 5000, 5000, 5000 } });
+    plane_echo.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 5000, 5000, 5000 } });
 
     var terrain = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.terrain);
     terrain.addInstance(.{ .position = .{ 0.0, 0.0, 50.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });

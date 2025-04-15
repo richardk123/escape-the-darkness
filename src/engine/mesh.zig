@@ -117,14 +117,20 @@ pub const Meshes = struct {
                 uv.items[index]
             else
                 .{ 0.0, 0.0 };
+
             const vertex_tangent = if (index < tangents.items.len)
                 tangents.items[index]
             else
                 .{ 1.0, 0.0, 0.0, 1.0 };
 
+            const vertex_normal = if (index < mesh_normals.items.len)
+                mesh_normals.items[index]
+            else
+                .{ 0.0, 1.0, 0.0 };
+
             try self.vertices.append(.{
                 .position = mesh_positions.items[index],
-                .normal = mesh_normals.items[index],
+                .normal = vertex_normal,
                 .uv = vertex_uv,
                 .tangent = vertex_tangent,
             });

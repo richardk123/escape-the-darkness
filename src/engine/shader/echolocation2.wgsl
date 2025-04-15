@@ -11,7 +11,6 @@ struct SoundInstanceData {
 
 struct Instance {
     model_matrix: mat4x4<f32>,    // Precomputed model matrix
-    // normal_matrix: mat4x4<f32>,   // Precomputed normal matrix
 };
 
 struct Uniforms {
@@ -24,10 +23,13 @@ struct Uniforms {
 
 struct VertexOut {
     @builtin(position) position: vec4<f32>,
+    @location(0) world_position: vec3<f32>,
+    @location(1) world_normal: vec3<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read> instances: array<Instance>;
+
 @vertex
 fn vs(
     @builtin(instance_index) instanceIndex: u32,

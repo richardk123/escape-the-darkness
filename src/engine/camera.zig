@@ -7,7 +7,7 @@ pub const Camera = struct {
     gctx: *zgpu.GraphicsContext,
 
     position: [3]f32 = .{ 0, 2.0, 0.0 },
-    forward: [3]f32 = .{ 0.0, 0.0, 0.0 },
+    forward: [3]f32 = .{ 1.0, 0.0, 0.0 },
     pitch: f32 = 0.0,
     yaw: f32 = 0.0,
 
@@ -23,7 +23,7 @@ pub const Camera = struct {
         const aspect_ratio = @as(f32, @floatFromInt(fb_width)) / @as(f32, @floatFromInt(fb_height));
 
         const proj = zm.perspectiveFovLh(math.pi / @as(f32, 3.0), // fov
-            aspect_ratio, 0.01, // near plane
+            aspect_ratio, 0.001, // near plane
             3000.0 // far plane
         );
 

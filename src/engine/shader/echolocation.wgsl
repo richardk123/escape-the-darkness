@@ -111,50 +111,50 @@ fn fs(
 
     return vec4<f32>(world_normal * 0.5 + 0.5, 1.0);
 
-    // // Base material properties
-    // let material_diffuse = vec3<f32>(0.8, 0.9, 1.0); // Bluish material
-    // let material_specular = vec3<f32>(1.0);
-    // let material_shininess = 2.0;
-    // let ambient_factor = 0.0;
+    // Base material properties
+    let material_diffuse = vec3<f32>(0.8, 0.9, 1.0); // Bluish material
+    let material_specular = vec3<f32>(1.0);
+    let material_shininess = 2.0;
+    let ambient_factor = 0.0;
 
-    // // Initialize ambient component
-    // var result = ambient_factor * material_diffuse;
+    // Initialize ambient component
+    var result = ambient_factor * material_diffuse;
 
-    // let view_dir = normalize(global.camera_position - world_pos);
+    let view_dir = normalize(global.camera_position - world_pos);
 
-    // // Process each sound as a point light
-    // for (var i: u32 = 0; i < global.sound_count; i++) {
-    //     let sound = global.sound_instances[i];
+    // Process each sound as a point light
+    for (var i: u32 = 0; i < global.sound_count; i++) {
+        let sound = global.sound_instances[i];
 
-    //     // Create a point light from the sound
-    //     let sound_source = SoundSource(
-    //         sound.position,               // position
-    //         vec3<f32>(0.8, 0.9, 1.0),     // color
-    //         100.0,                          // intensity
-    //         3000.0,                        // range
-    //         1.0,                          // constant
-    //         0.5,                         // linear
-    //         0.001                         // quadratic
-    //     );
+        // Create a point light from the sound
+        let sound_source = SoundSource(
+            sound.position,               // position
+            vec3<f32>(0.8, 0.9, 1.0),     // color
+            100.0,                          // intensity
+            3000.0,                        // range
+            1.0,                          // constant
+            0.5,                         // linear
+            0.001                         // quadratic
+        );
 
-    //     // Add light contribution
-    //     result += calculateEcholocation(
-    //         sound_source,
-    //         sound,
-    //         world_pos,
-    //         world_normal,
-    //         view_dir,
-    //         material_diffuse,
-    //         material_specular,
-    //         material_shininess
-    //     );
-    // }
+        // Add light contribution
+        result += calculateEcholocation(
+            sound_source,
+            sound,
+            world_pos,
+            world_normal,
+            view_dir,
+            material_diffuse,
+            material_specular,
+            material_shininess
+        );
+    }
 
-    // // Apply tone mapping and gamma correction
-    // result = result / (result + vec3<f32>(1.0)); // Simple Reinhard tone mapping
-    // result = pow(result, vec3<f32>(1.0/2.2));    // Gamma correction
+    // Apply tone mapping and gamma correction
+    result = result / (result + vec3<f32>(1.0)); // Simple Reinhard tone mapping
+    result = pow(result, vec3<f32>(1.0/2.2));    // Gamma correction
 
-    // return vec4<f32>(result, 1.0);
+    return vec4<f32>(result, 1.0);
 }
 
 // Apply quaternion rotation to a vector
