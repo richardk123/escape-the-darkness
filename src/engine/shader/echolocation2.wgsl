@@ -2,7 +2,7 @@ const MAX_SOUND_COUNT = 16;
 const SOUND_SPEED = 300.0; // meters per second
 const SAMPLE_RATE = 48000.0; // samples per second
 const SOUND_BRIGHTNESS = 100.0;
-const SOUND_PROPAGATION_QUADRATIC = 0.02;
+const SOUND_PROPAGATION_QUADRATIC = 0.2;
 
 struct SoundInstanceData {
     offset: u32,
@@ -51,11 +51,7 @@ fn vs(
     var output: VertexOut;
     output.position = clipPos;
     output.world_position = worldPos.xyz;
-    output.normal = normal * mat3x3(
-         instance.model_matrix[0].xyz,
-         instance.model_matrix[1].xyz,
-         instance.model_matrix[2].xyz,
-    );
+    output.normal = normalize(normal);
     return output;
 }
 
@@ -65,12 +61,15 @@ fn vs(
 @group(0) @binding(5) var normal_map_sampler: sampler;
 @fragment
 fn fs(in: VertexOut) -> @location(0) vec4<f32> {
-
+    var n = normalize(in.normal);
     let sound_color = vec3<f32>(1.0); // white light color
 
     let view_dir = normalize(uniforms.camera_position - in.world_position);
     var result = vec3<f32>(0.0);
 
+    // return vec4<f32>(n * 0.5 + 0.5, 1.0);
+
+    // return vec4(in.normal, 1.0);
     for (var i: u32 = 0; i < uniforms.sound_count; i++) {
         let sound = uniforms.sound_instances[i];
         let sound_dir = normalize(sound.position - in.world_position);
@@ -83,8 +82,8 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
                          (SOUND_PROPAGATION_QUADRATIC * distance * distance);
 
         // Calculate how much sound energy gets reflected toward camera
-        let reflection_factor = max(dot(in.normal, view_dir), 0.0);
-        let diffuse = max(dot(in.normal, sound_dir), 0.0);
+        let reflection_factor = max(dot(n, view_dir), 0.0);
+        let diffuse = max(dot(n, sound_dir), 0.0);
         result += diffuse * attenuation * sound_color * reflection_factor;
     }
 

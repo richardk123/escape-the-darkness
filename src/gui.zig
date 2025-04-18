@@ -116,7 +116,7 @@ pub const GUI = struct {
         // Create a null-terminated string in our buffer
         const button_text = std.fmt.bufPrintZ(&buffer, "Play {s}", .{tag_str}) catch "Play";
         if (zgui.button(button_text, .{})) {
-            _ = self.engine.sound_manager.play(sound, .{ 0.0, 2.0, 0.0 }) catch |err| {
+            _ = self.engine.sound_manager.play(sound, .{ 2.0, 2.0, 2.0 }) catch |err| {
                 std.debug.print("Failed to play rumble sound: {}\n", .{err});
             };
         }
