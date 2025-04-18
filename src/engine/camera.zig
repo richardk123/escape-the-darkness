@@ -23,7 +23,7 @@ pub const Camera = struct {
         const aspect_ratio = @as(f32, @floatFromInt(fb_width)) / @as(f32, @floatFromInt(fb_height));
 
         const proj = zm.perspectiveFovLh(math.pi / @as(f32, 3.0), // fov
-            aspect_ratio, 0.001, // near plane
+            aspect_ratio, 1.0, // near plane
             3000.0 // far plane
         );
 
