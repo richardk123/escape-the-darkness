@@ -23,7 +23,8 @@ struct Uniforms {
 
 struct VertexOut {
     @builtin(position) position: vec4<f32>,
-    @location(0) color: vec3<f32>,
+    @location(0) world_position: vec3<f32>,
+    @location(1) normal: vec3<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -43,27 +44,27 @@ fn vs(
     let viewPos = uniforms.view_matrix * worldPos;
     let clipPos = uniforms.projection_matrix * viewPos;
 
-    let color = hash31(f32(instanceIndex));
-
     var output: VertexOut;
     output.position = clipPos;
-    output.color = color;
+    output.world_position = worldPos.xyz;
+    output.normal = normal * mat3x3(
+         instance.model_matrix[0].xyz,
+         instance.model_matrix[1].xyz,
+         instance.model_matrix[2].xyz,
+    );
     return output;
 }
 
-fn hash11(x: f32) -> f32 {
-    return fract(sin(x) * 43758.5453123);
-}
-
-fn hash31(x: f32) -> vec3<f32> {
-    return vec3<f32>(
-        hash11(x),
-        hash11(x + 1.0),
-        hash11(x + 2.0)
-    );
-}
-
 @fragment
-fn fs(@location(0) color: vec3<f32>) -> @location(0) vec4<f32> {
-    return vec4<f32>(color, 1.0);
+fn fs(in: VertexOut) -> @location(0) vec4<f32> {
+    let light_position = vec3<f32>(0.0);
+    let light_color = vec3<f32>(1.0);
+
+    let lightDir = normalize(light_position - in.world_position);
+    let diffuse = max(dot(in.normal, lightDir), 0.0);
+
+    let baseColor = vec3<f32>(1.0, 1.0, 1.0); // White base color
+    let finalColor = baseColor * light_color * diffuse;
+
+    return vec4<f32>(finalColor, 1.0);
 }
