@@ -57,10 +57,10 @@ pub fn main() !void {
     }
 
     var plane_echo = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.plane);
-    plane_echo.addInstance(.{ .position = .{ 0.0, -10.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 5000, 5000, 5000 } });
+    plane_echo.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 5000, 5000, 5000 } });
 
     var terrain = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.terrain);
-    terrain.addInstance(.{ .position = .{ 0.0, 0.1, 50.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    terrain.addInstance(.{ .position = .{ 0.0, 0.0, 50.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
     var debiug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
     debiug_sound_quad.addInstance(.{ .position = .{ 0.0, 0.1, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });

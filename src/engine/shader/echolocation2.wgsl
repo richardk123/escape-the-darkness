@@ -2,7 +2,7 @@ const MAX_SOUND_COUNT = 16;
 const SOUND_SPEED = 300.0; // meters per second
 const SAMPLE_RATE = 48000.0; // samples per second
 const SOUND_BRIGHTNESS = 100.0;
-const SOUND_PROPAGATION_QUADRATIC = 0.2;
+const SOUND_PROPAGATION_QUADRATIC = 0.02;
 
 struct SoundInstanceData {
     offset: u32,
@@ -51,7 +51,11 @@ fn vs(
     var output: VertexOut;
     output.position = clipPos;
     output.world_position = worldPos.xyz;
-    output.normal = normalize(normal);
+    output.normal = normalize(normal * mat3x3(
+         instance.model_matrix[0].xyz,
+         instance.model_matrix[1].xyz,
+         instance.model_matrix[2].xyz,
+    ));
     return output;
 }
 
@@ -84,7 +88,7 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
         // Calculate how much sound energy gets reflected toward camera
         let reflection_factor = max(dot(n, view_dir), 0.0);
         let diffuse = max(dot(n, sound_dir), 0.0);
-        result += diffuse * attenuation * sound_color * reflection_factor;
+        result += diffuse * attenuation * sound_color;
     }
 
     // Apply tone mapping and gamma correction

@@ -105,7 +105,7 @@ pub const MeshRenderer = struct {
         const rotation_matrix = zm.matFromQuat(zm.loadArr4(instance.rotation));
         const scale_matrix = zm.scaling(instance.scale[0], instance.scale[1], instance.scale[2]);
         const translation_matrix = zm.translation(instance.position[0], instance.position[1], instance.position[2]);
-        const model_matrix = zm.mul(scale_matrix, zm.mul(rotation_matrix, translation_matrix));
+        const model_matrix = zm.mul(translation_matrix, zm.mul(rotation_matrix, scale_matrix));
         return MeshInstanceGPU{
             .model_matrix = model_matrix,
         };
