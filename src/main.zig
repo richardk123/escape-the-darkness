@@ -63,8 +63,11 @@ pub fn main() !void {
     var terrain = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.terrain);
     terrain.addInstance(.{ .position = .{ 0.0, 0.0, 50.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
+    var ship = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.ship);
+    ship.addInstance(.{ .position = .{ 0.0, 2.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+
     var debiug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
-    debiug_sound_quad.addInstance(.{ .position = .{ 0.0, 0.1, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    debiug_sound_quad.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
 
     var free_camera = FreeCamera.init(&engine);
 
