@@ -55,7 +55,7 @@ pub const MeshRenderers = struct {
     }
 
     pub fn deinit(self: *MeshRenderers) void {
-        for (self.mesh_renderers.items) |mi| {
+        for (self.mesh_renderers.items) |*mi| {
             mi.deinit();
         }
         self.mesh_renderers.deinit();
@@ -68,8 +68,10 @@ pub const MeshRenderer = struct {
     mesh_index: usize,
     instances: std.ArrayList(MeshInstance),
     instances_gpu: std.ArrayList(MeshInstanceGPU),
+    instances_map: std.AutoHashMap(u32, *MeshInstance),
     // offset used for mesh_instance_buffer
     offset: usize = 0,
+    id: u32 = 0,
 
     pub fn init(engine: *Engine, material_type: MaterialType, comptime mesh_type: MeshType) !MeshRenderer {
         const mesh_index = @as(usize, @intFromEnum(mesh_type));
@@ -82,23 +84,54 @@ pub const MeshRenderer = struct {
 
         const instances = try std.ArrayList(MeshInstance).initCapacity(engine.allocator, Constants.MAX_INSTANCE_COUNT);
         const instances_gpu = try std.ArrayList(MeshInstanceGPU).initCapacity(engine.allocator, Constants.MAX_INSTANCE_COUNT);
-        return MeshRenderer{ .material = material, .mesh_index = mesh_index, .normal_texture = normal_texture, .instances = instances, .instances_gpu = instances_gpu };
+        const instances_map = std.AutoHashMap(u32, *MeshInstance).init(engine.allocator);
+        return MeshRenderer{
+            .material = material,
+            .mesh_index = mesh_index,
+            .normal_texture = normal_texture,
+            .instances = instances,
+            .instances_gpu = instances_gpu,
+            .instances_map = instances_map,
+        };
     }
 
-    pub fn addInstance(self: *MeshRenderer, instance: MeshInstance) void {
+    pub fn addInstance(self: *MeshRenderer, position: ?[3]f32, rotation: ?[4]f32, scale: ?[3]f32) u32 {
+        const instance: MeshInstance = .{
+            .position = position orelse .{ 0.0, 0.0, 0.0 },
+            .rotation = rotation orelse .{ 0.0, 0.0, 0.0, 1.0 },
+            .scale = scale orelse .{ 1.0, 1.0, 1.0 },
+        };
         self.instances.append(instance) catch |err| {
             std.debug.print("Failed to add instance: {}\n", .{err});
-            return;
+            @panic("cannot add instance");
         };
 
         // Create GPU instance with correct matrix
         const gpu_instance = createGPUInstance(instance);
         self.instances_gpu.append(gpu_instance) catch |err| {
             std.debug.print("Failed to add GPU instance: {}\n", .{err});
-            // Remove the CPU instance if we couldn't add the GPU instance
-            _ = self.instances.pop();
-            return;
+            @panic("cannot add gpu instance");
         };
+
+        self.id += 1;
+
+        self.instances_map.put(self.id, &self.instances.items[self.instances.items.len - 1]) catch |err| {
+            std.debug.print("Failed to add instance pointer to map: {}\n", .{err});
+            @panic("cannot add instance map");
+        };
+
+        return self.id;
+    }
+
+    pub fn updateInstance(self: *MeshRenderer, id: u32, position: ?[3]f32, rotation: ?[4]f32, scale: ?[3]f32) void {
+        const instance = self.instances_map.get(id) orelse return;
+        instance.position = position orelse instance.position;
+        instance.rotation = rotation orelse instance.rotation;
+        instance.scale = scale orelse instance.scale;
+    }
+
+    pub fn getInstance(self: *MeshRenderer, id: u32) ?*MeshInstance {
+        return self.instances_map.get(id);
     }
 
     // Helper function to create a GPU instance from a CPU instance
@@ -135,8 +168,9 @@ pub const MeshRenderer = struct {
         }
     }
 
-    pub fn deinit(self: *const MeshRenderer) void {
+    pub fn deinit(self: *MeshRenderer) void {
         self.instances.deinit();
         self.instances_gpu.deinit();
+        self.instances_map.deinit();
     }
 };

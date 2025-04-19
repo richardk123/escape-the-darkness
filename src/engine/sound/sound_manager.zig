@@ -12,6 +12,7 @@ pub const SoundFile = enum {
     music,
     water_drop,
     explosion_medium,
+    flare,
     // Returns the file path for each sound
     pub fn getPath(self: SoundFile) [:0]const u8 {
         return switch (self) {
@@ -19,6 +20,7 @@ pub const SoundFile = enum {
             .music => "content/sound/sample.wav",
             .water_drop => "content/sound/water-drop.wav",
             .explosion_medium => "content/sound/medium-explosion.wav",
+            .flare => "content/sound/3000.wav",
         };
     }
 };
@@ -164,6 +166,7 @@ pub const SoundInstance = struct {
     instance_data_index: usize,
     id: usize,
     position: [3]f32 = .{ 0.0, 0.0, 0.0 },
+    velocity: [3]f32 = .{ 0.0, 0.0, 0.0 },
     // used for delay when player hears the sound
     startDelay: f32 = 0,
     // used for delay after sound played
@@ -177,7 +180,7 @@ pub const SoundManager = struct {
     data: SoundDatas,
     engine: *zaudio.Engine,
     instances: std.ArrayList(SoundInstance),
-    next_id: usize = 0,
+    next_id: u32 = 0,
     uniform: SoundUniform,
 
     pub fn init(allocator: std.mem.Allocator, max_texture_size_2d: u32) !SoundManager {
@@ -186,6 +189,9 @@ pub const SoundManager = struct {
         const engine = try zaudio.Engine.create(null);
         const sound_instances = std.ArrayList(SoundInstance).init(allocator);
         const sound_uniform = SoundUniform.init();
+        engine.setListenerPosition(0, .{ 0, 0, 0 });
+        // engine.setListenerVelocity(0, .{ 0, 0, 0 });
+        // engine.setListenerDirection(0, .{ 0, 0, -1 });
 
         return SoundManager{
             .data = sound_datas,
@@ -195,9 +201,17 @@ pub const SoundManager = struct {
         };
     }
 
-    pub fn play(self: *SoundManager, sound_file: SoundFile, position: [3]f32) !usize {
+    pub fn play(self: *SoundManager, sound_file: SoundFile, position: [3]f32) !u32 {
         const sound = try self.engine.createSoundFromFile(sound_file.getPath(), .{ .flags = .{ .stream = true } });
+        sound.setSpatializationEnabled(true);
+        sound.setDopplerFactor(5.0);
+        sound.setMinDistance(0.1);
+        sound.setMaxDistance(1000.0);
+        sound.setAttenuationModel(.linear);
+        sound.setVolume(5.0);
         const sound_data = self.data.findSoundData(sound_file);
+
+        self.next_id += 1;
 
         try self.instances.append(SoundInstance{
             .id = self.next_id,
@@ -205,8 +219,6 @@ pub const SoundManager = struct {
             .instance_data_index = self.instances.items.len,
             .position = position,
         });
-
-        self.next_id += 1;
 
         if (self.instances.items.len <= Constants.MAX_SOUND_COUNT) {
             var uniform_sound_data = &self.uniform.instances[self.instances.items.len - 1];
@@ -220,8 +232,33 @@ pub const SoundManager = struct {
         return self.next_id;
     }
 
+    pub fn stop(self: *SoundManager, id: u32) void {
+        if (self.getSound(id)) |sound_instance| {
+            // Find the index in the instances array
+            for (self.instances.items, 0..) |instance, i| {
+                if (instance.id == id) {
+                    self.removeSoundInstance(sound_instance, i);
+                    break;
+                }
+            }
+        }
+    }
+
+    pub fn getSound(self: *SoundManager, id: u32) ?*SoundInstance {
+        for (self.instances.items) |*instance| {
+            if (instance.id == id) {
+                return instance;
+            }
+        }
+        return null;
+    }
+
     // Update loop - call this once per frame to cleanup finished sounds
     pub fn update(self: *SoundManager, camera: *Camera, dt: f32) void {
+        self.engine.setListenerPosition(0, camera.position);
+        // self.engine.setListenerVelocity(0, .{ 0, 0, 0 });
+        self.engine.setListenerDirection(0, camera.forward);
+
         // Iterate backwards to safely remove elements
         var i: usize = self.instances.items.len;
         while (i > 0) {
@@ -279,6 +316,7 @@ pub const SoundManager = struct {
     fn updateSoundInstance(self: *SoundManager, instance: *SoundInstance, dt: f32) void {
         // sound is playing
         if (instance.instance_data_index < self.uniform.count) {
+            instance.sound.setVelocity(instance.velocity);
             instance.renderTime += dt;
             const frame: u32 = @as(u32, @intFromFloat(instance.renderTime * Constants.SOUND_SAMPLE_RATE));
             self.uniform.instances[instance.instance_data_index].current_frame = frame;

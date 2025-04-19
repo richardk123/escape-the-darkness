@@ -42,7 +42,6 @@ fn vs(
     @location(2) uv: vec2<f32>,
     @location(3) tangent: vec4<f32>,
 ) -> VertexOut {
-    // Get instance data
     let instance = instances[instanceIndex];
     let worldPos = instance.model_matrix * vec4<f32>(position, 1.0);
     let viewPos = uniforms.view_matrix * worldPos;
@@ -51,11 +50,13 @@ fn vs(
     var output: VertexOut;
     output.position = clipPos;
     output.world_position = worldPos.xyz;
-    output.normal = normalize(normal * mat3x3(
-         instance.model_matrix[0].xyz,
-         instance.model_matrix[1].xyz,
-         instance.model_matrix[2].xyz,
-    ));
+    // output.normal = normalize(normal * mat3x3(
+    //      instance.model_matrix[0].xyz,
+    //      instance.model_matrix[1].xyz,
+    //      instance.model_matrix[2].xyz,
+    // ));
+
+    output.normal = normalize((instance.model_matrix * vec4<f32>(normal, 0.0)).xyz);
     return output;
 }
 

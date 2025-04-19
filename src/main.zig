@@ -8,6 +8,7 @@ const MeshType = @import("engine/mesh.zig").MeshType;
 const Engine = @import("engine/engine.zig").Engine;
 const FreeCamera = @import("utils/camera_free.zig").FreeCamera;
 const MaterialType = @import("engine/material.zig").MaterialType;
+const Player = @import("player/player.zig").Player;
 
 pub fn main() !void {
     try zglfw.init();
@@ -37,39 +38,27 @@ pub fn main() !void {
     defer gui.deinit();
 
     var monkey = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.monkey);
-    // for (0..5) |i| {
-    //     const dist: f32 = @as(f32, @floatFromInt(i)) + 1.2;
-    //     monkey.addInstance(.{ .position = .{ dist * dist, 2.0, dist * 10.0 + dist }, .rotation = .{ 0.45, 0, 0, 0.45 }, .scale = .{ 1, 1, 1 } });
-    //     monkey.addInstance(.{ .position = .{ -dist * dist, 2.0, dist * 10.0 + dist }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-    // }
-
     const count = 10;
     const radius: f32 = 10.0;
     for (0..count) |i| {
         const angle = @as(f32, @floatFromInt(i)) / @as(f32, count) * 2.0 * std.math.pi;
         const x = std.math.cos(angle) * radius;
         const z = std.math.sin(angle) * radius;
-        // zm.quatFromAxisAngle(.{ 0, 1, 0, 0 }, 0.5);
-        monkey.addInstance(.{
-            .position = .{ x, 2.0, z },
-            .rotation = zm.quatFromRollPitchYaw(1.14, 1.14, 0),
-            .scale = .{ 1, 1, 1 },
-        });
+        _ = monkey.addInstance(.{ x, 2.0, z }, zm.quatFromRollPitchYaw(1.14, 1.14, 0), null);
     }
 
     var plane_echo = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.plane);
-    plane_echo.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 5000, 5000, 5000 } });
+    _ = plane_echo.addInstance(.{ 0.0, 0.0, 0.0 }, null, .{ 5000, 5000, 5000 });
 
     var terrain = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.terrain);
-    terrain.addInstance(.{ .position = .{ 0.0, 0.0, 50.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    _ = terrain.addInstance(.{ 0.0, 0.0, 50.0 }, null, null);
 
-    var ship = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.ship);
-    ship.addInstance(.{ .position = .{ 0.0, 2.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
-
-    var debiug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
-    debiug_sound_quad.addInstance(.{ .position = .{ 0.0, 0.0, 0.0 }, .rotation = .{ 0, 0, 0, 1 }, .scale = .{ 1, 1, 1 } });
+    var debug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
+    _ = debug_sound_quad.addInstance(.{ 0.0, 0.1, 0.0 }, null, null);
 
     var free_camera = FreeCamera.init(&engine);
+    var player = try Player.init(&engine);
+    defer player.deinit();
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
@@ -78,6 +67,7 @@ pub fn main() !void {
         engine.renderer.beginFrame();
         try engine.update();
         try gui.draw();
+        player.update();
         engine.renderer.finishFrame();
     }
 }

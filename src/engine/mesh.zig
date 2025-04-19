@@ -11,6 +11,7 @@ pub const MeshType = enum {
     plane,
     terrain,
     ship,
+    flare,
     // Returns the file path for each sound
     pub fn getName(self: MeshType) [:0]const u8 {
         return switch (self) {
@@ -19,6 +20,7 @@ pub const MeshType = enum {
             .plane => "plane",
             .terrain => "terrain",
             .ship => "space-ship",
+            .flare => "flare",
         };
     }
     pub fn getNormalTextureName(self: MeshType) [:0]const u8 {
@@ -28,6 +30,7 @@ pub const MeshType = enum {
             .plane => "stone_wall_normal.png",
             .terrain => "stone_wall_normal.png",
             .ship => "stone_wall_normal.png",
+            .flare => "stone_wall_normal.png",
         };
     }
 };
