@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = std.math;
 const zgui = @import("zgui");
+const zm = @import("zmath");
 const zglfw = @import("zglfw");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
@@ -8,6 +9,7 @@ const content_dir = @import("build_options").content_dir;
 
 const Engine = @import("engine/engine.zig").Engine;
 const SoundFile = @import("engine/sound/sound_manager.zig").SoundFile;
+const mr = @import("engine/mesh_renderer.zig");
 
 pub const GUI = struct {
     engine: *Engine,
@@ -77,6 +79,15 @@ pub const GUI = struct {
             zgui.spacing();
             zgui.separator();
             zgui.spacing();
+            for (self.engine.mesh_renderers.mesh_renderers.items, 0..) |renderer, i| {
+                for (renderer.instances.items, 0..) |*instance, j| {
+                    var label_buf: [64]u8 = undefined;
+                    const label = std.fmt.bufPrintZ(&label_buf, "Mesh {d} - Instance {d}", .{ i, j }) catch "Instance";
+                    renderMeshInstanceControls(instance, label);
+                }
+            }
+            zgui.separator();
+            zgui.spacing();
 
             // Add sound controls section
             if (zgui.collapsingHeader("Sound Controls", .{ .default_open = true })) {
@@ -104,6 +115,54 @@ pub const GUI = struct {
         self.renderSoundUniform();
 
         zgui.end();
+    }
+
+    // Add this to the GUI struct in gui.zig
+    pub fn renderMeshInstanceControls(instance: *mr.MeshInstance, label: [:0]const u8) void {
+        if (zgui.collapsingHeader(label, .{ .default_open = false })) {
+            zgui.spacing();
+            zgui.indent(.{ .indent_w = 20 });
+
+            // Position controls
+            if (makeTreeNode("Position##pos_{s}", .{label})) {
+                makeDragFloat(&instance.position[0], "X##posx_{s}", .{label});
+                makeDragFloat(&instance.position[1], "Y##pos_{s}", .{label});
+                makeDragFloat(&instance.position[2], "Z##pos_{s}", .{label});
+                zgui.treePop();
+            }
+
+            // Rotation controls (quaternion)
+            if (makeTreeNode("Rotation##rot_{s}", .{label})) {
+                makeDragFloat(&instance.euler_angles[0], "X##rot_{s}", .{label});
+                makeDragFloat(&instance.euler_angles[1], "Y##rot_{s}", .{label});
+                makeDragFloat(&instance.euler_angles[2], "Z##rot_{s}", .{label});
+                instance.rotation = zm.quatFromRollPitchYaw(instance.euler_angles[0], instance.euler_angles[1], instance.euler_angles[2]);
+                zgui.treePop();
+            }
+
+            // Scale controls
+            if (makeTreeNode("Scale##scale_{s}", .{label})) {
+                makeDragFloat(&instance.scale[0], "X##scale_{s}", .{label});
+                makeDragFloat(&instance.scale[1], "Y##scale_{s}", .{label});
+                makeDragFloat(&instance.scale[2], "Z##scale_{s}", .{label});
+                zgui.treePop();
+            }
+
+            zgui.unindent(.{ .indent_w = 20 });
+            zgui.spacing();
+        }
+    }
+
+    fn makeTreeNode(comptime fmt: []const u8, args: anytype) bool {
+        var buf: [64]u8 = undefined;
+        const node_id = std.fmt.bufPrintZ(&buf, fmt, args) catch unreachable;
+        return zgui.treeNodeFlags(node_id, .{ .default_open = true });
+    }
+
+    fn makeDragFloat(value: *f32, comptime fmt: []const u8, args: anytype) void {
+        var buf: [64]u8 = undefined;
+        const label = std.fmt.bufPrintZ(&buf, fmt, args) catch unreachable;
+        _ = zgui.dragFloat(label, .{ .v = value, .speed = 0.1 });
     }
 
     fn renderPlaySoundButton(self: *GUI, sound: SoundFile) void {

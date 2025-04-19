@@ -16,6 +16,7 @@ pub const MeshInstance = struct {
     position: [3]f32,
     rotation: [4]f32,
     scale: [3]f32,
+    euler_angles: [3]f32 = .{ 0.0, 0.0, 0.0 }, // Roll, Pitch, Yaw
 };
 
 pub const MeshInstanceGPU = struct {
@@ -102,10 +103,10 @@ pub const MeshRenderer = struct {
 
     // Helper function to create a GPU instance from a CPU instance
     fn createGPUInstance(instance: MeshInstance) MeshInstanceGPU {
-        const rotation_matrix = zm.matFromQuat(zm.loadArr4(instance.rotation));
+        const rotation_matrix = zm.matFromQuat(instance.rotation);
         const scale_matrix = zm.scaling(instance.scale[0], instance.scale[1], instance.scale[2]);
         const translation_matrix = zm.translation(instance.position[0], instance.position[1], instance.position[2]);
-        const model_matrix = zm.mul(translation_matrix, zm.mul(rotation_matrix, scale_matrix));
+        const model_matrix = zm.mul(scale_matrix, zm.mul(rotation_matrix, translation_matrix));
         return MeshInstanceGPU{
             .model_matrix = model_matrix,
         };

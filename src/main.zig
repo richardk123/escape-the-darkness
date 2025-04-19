@@ -2,6 +2,7 @@ const std = @import("std");
 const zglfw = @import("zglfw");
 const GUI = @import("gui.zig").GUI;
 const window_title = "Escape the darkness";
+const zm = @import("zmath");
 
 const MeshType = @import("engine/mesh.zig").MeshType;
 const Engine = @import("engine/engine.zig").Engine;
@@ -48,10 +49,10 @@ pub fn main() !void {
         const angle = @as(f32, @floatFromInt(i)) / @as(f32, count) * 2.0 * std.math.pi;
         const x = std.math.cos(angle) * radius;
         const z = std.math.sin(angle) * radius;
-
+        // zm.quatFromAxisAngle(.{ 0, 1, 0, 0 }, 0.5);
         monkey.addInstance(.{
             .position = .{ x, 2.0, z },
-            .rotation = .{ 0, 0, 0, 1 },
+            .rotation = zm.quatFromRollPitchYaw(1.14, 1.14, 0),
             .scale = .{ 1, 1, 1 },
         });
     }
