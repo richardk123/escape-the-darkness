@@ -112,8 +112,14 @@ fn getSoundIntensity(sound: SoundInstanceData, distance: f32) -> f32 {
     if (current_frame > delay_frames) {
         sample_frame = current_frame - delay_frames;
     } else {
-        sample_frame = 0u;
+        return 0;
     }
+
+    // Frame exceeded the size
+    if (sample_frame > sound.size) {
+        return 0;
+    }
+
     // Calculate the texture dimensions
     let texture_size = i32(textureDimensions(image).x);
 

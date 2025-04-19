@@ -90,7 +90,8 @@ pub const Engine = struct {
     }
 
     pub fn update(self: *Engine) !void {
-        self.sound_manager.update();
+        const gctx = self.renderer.gctx;
+        self.sound_manager.update(&self.camera, gctx.stats.delta_time);
         try self.draw();
     }
 

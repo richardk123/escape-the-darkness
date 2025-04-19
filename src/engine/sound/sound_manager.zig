@@ -1,7 +1,10 @@
 const std = @import("std");
 const zaudio = @import("zaudio");
+const Utils = @import("../common/utils.zig");
+
 const Constants = @import("../common/constants.zig");
 const WavDecoder = @import("wav_decoder.zig");
+const Camera = @import("../camera.zig").Camera;
 
 // Enum of predefined sound files
 pub const SoundFile = enum {
@@ -161,6 +164,13 @@ pub const SoundInstance = struct {
     instance_data_index: usize,
     id: usize,
     position: [3]f32 = .{ 0.0, 0.0, 0.0 },
+    // used for delay when player hears the sound
+    startDelay: f32 = 0,
+    // used for delay after sound played
+    finishDelay: f32 = 0,
+    // time to calculate pcr
+    renderTime: f32 = 0,
+    started: bool = false,
 };
 
 pub const SoundManager = struct {
@@ -187,8 +197,6 @@ pub const SoundManager = struct {
 
     pub fn play(self: *SoundManager, sound_file: SoundFile, position: [3]f32) !usize {
         const sound = try self.engine.createSoundFromFile(sound_file.getPath(), .{ .flags = .{ .stream = true } });
-        try sound.start();
-
         const sound_data = self.data.findSoundData(sound_file);
 
         try self.instances.append(SoundInstance{
@@ -213,41 +221,68 @@ pub const SoundManager = struct {
     }
 
     // Update loop - call this once per frame to cleanup finished sounds
-    pub fn update(self: *SoundManager) void {
+    pub fn update(self: *SoundManager, camera: *Camera, dt: f32) void {
         // Iterate backwards to safely remove elements
         var i: usize = self.instances.items.len;
         while (i > 0) {
             i -= 1;
-            const instance = self.instances.items[i];
+            var instance = &self.instances.items[i];
+            const sound = instance.sound;
+            instance.startDelay += dt;
 
-            if (!instance.sound.isPlaying()) {
-                // Sound is no longer playing, clean it up
-                instance.sound.destroy();
+            const distance = Utils.distance(camera.position, instance.position);
+            const sound_traveled_distance = Constants.SPEED_OF_SOUND * instance.startDelay;
+            const canPlay = distance < sound_traveled_distance;
 
-                // If this wasn't the last active sound, move the last one to this spot
-                if (instance.instance_data_index < self.uniform.count - 1) {
-                    self.uniform.instances[instance.instance_data_index] = self.uniform.instances[self.uniform.count - 1];
+            if (canPlay and !instance.started) {
+                // sound arrived to player
+                sound.start() catch std.debug.print("cannot start sound", .{});
+                instance.started = true;
+            } else if (!sound.isPlaying() and instance.started) {
+                instance.finishDelay += dt;
 
-                    // Update the index of the sound instance that was moved
-                    for (self.instances.items) |*other_instance| {
-                        if (other_instance.instance_data_index == self.uniform.count - 1) {
-                            other_instance.instance_data_index = instance.instance_data_index;
-                            break;
-                        }
-                    }
+                if (instance.finishDelay > Constants.SOUND_FINISH_DELAY) {
+                    // Sound is no longer visible, clean it up
+                    self.removeSoundInstance(instance, i);
+                } else {
+                    // just render sound
+                    self.updateSoundInstance(instance, dt);
                 }
-
-                self.uniform.count -= 1;
-                _ = self.instances.swapRemove(i);
             } else {
-                // update pcr_frame
-                if (instance.instance_data_index < self.uniform.count) {
-                    const pcr_frame: u64 = instance.sound.getCursorInPcmFrames() catch 0;
-                    const frame = @as(u32, @intCast(pcr_frame));
-                    self.uniform.instances[instance.instance_data_index].current_frame = frame;
-                    self.uniform.instances[instance.instance_data_index].position = instance.position;
+                // sound is playing
+                self.updateSoundInstance(instance, dt);
+            }
+        }
+    }
+
+    fn removeSoundInstance(self: *SoundManager, instance: *SoundInstance, i: usize) void {
+        const sound = instance.sound;
+        sound.destroy();
+
+        // If this wasn't the last active sound, move the last one to this spot
+        if (instance.instance_data_index < self.uniform.count - 1) {
+            self.uniform.instances[instance.instance_data_index] = self.uniform.instances[self.uniform.count - 1];
+
+            // Update the index of the sound instance that was moved
+            for (self.instances.items) |*other_instance| {
+                if (other_instance.instance_data_index == self.uniform.count - 1) {
+                    other_instance.instance_data_index = instance.instance_data_index;
+                    break;
                 }
             }
+        }
+
+        self.uniform.count -= 1;
+        _ = self.instances.swapRemove(i);
+    }
+
+    fn updateSoundInstance(self: *SoundManager, instance: *SoundInstance, dt: f32) void {
+        // sound is playing
+        if (instance.instance_data_index < self.uniform.count) {
+            instance.renderTime += dt;
+            const frame: u32 = @as(u32, @intFromFloat(instance.renderTime * Constants.SOUND_SAMPLE_RATE));
+            self.uniform.instances[instance.instance_data_index].current_frame = frame;
+            self.uniform.instances[instance.instance_data_index].position = instance.position;
         }
     }
 
