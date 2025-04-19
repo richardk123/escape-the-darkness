@@ -248,7 +248,7 @@ pub const SoundManager = struct {
                     // just render sound
                     self.updateSoundInstance(instance, dt);
                 }
-            } else {
+            } else if (sound.isPlaying()) {
                 // sound is playing
                 self.updateSoundInstance(instance, dt);
             }
