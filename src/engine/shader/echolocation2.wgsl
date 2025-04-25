@@ -29,6 +29,7 @@ struct VertexOut {
     @builtin(position) position: vec4<f32>,
     @location(0) world_position: vec3<f32>,
     @location(1) normal: vec3<f32>,
+    @location(2) @interpolate(linear) barycentric: vec3<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -41,6 +42,7 @@ fn vs(
     @location(1) normal: vec3<f32>,
     @location(2) uv: vec2<f32>,
     @location(3) tangent: vec4<f32>,
+    @location(4) barycentric: vec3<f32>,
 ) -> VertexOut {
     let instance = instances[instanceIndex];
     let worldPos = instance.model_matrix * vec4<f32>(position, 1.0);
@@ -50,13 +52,14 @@ fn vs(
     var output: VertexOut;
     output.position = clipPos;
     output.world_position = worldPos.xyz;
-    // output.normal = normalize(normal * mat3x3(
-    //      instance.model_matrix[0].xyz,
-    //      instance.model_matrix[1].xyz,
-    //      instance.model_matrix[2].xyz,
-    // ));
+    output.normal = normalize(normal * mat3x3(
+         instance.model_matrix[0].xyz,
+         instance.model_matrix[1].xyz,
+         instance.model_matrix[2].xyz,
+    ));
 
-    output.normal = normalize((instance.model_matrix * vec4<f32>(normal, 0.0)).xyz);
+    // output.normal = normalize((instance.model_matrix * vec4<f32>(normal, 0.0)).xyz);
+    output.barycentric = barycentric;
     return output;
 }
 
@@ -96,7 +99,21 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
     result = result / (result + vec3<f32>(1.0)); // Simple Reinhard tone mapping
     result = pow(result, vec3<f32>(1.0/2.2));    // Gamma correction
 
-    return vec4<f32>(result, 1.0);
+
+    // wireframe
+    let barys = in.barycentric;
+    let deltas = fwidth(barys);
+    let smoothing = deltas * 1.0;
+    let thickness = deltas * 0.25;
+    let smoothedges = smoothstep(vec3(0.0), smoothing, barys);
+    let edge = min(min(smoothedges.x, smoothedges.y), smoothedges.z);
+
+    // Change this to make wireframes more visible
+    let wireframe_color = vec3<f32>(0.1);
+    let final_color = mix(wireframe_color, result, edge);
+    return vec4(final_color, 1.0);
+
+    // return vec4<f32>(result, 1.0);
 }
 
 fn getSoundIntensity(sound: SoundInstanceData, distance: f32) -> f32 {

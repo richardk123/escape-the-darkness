@@ -34,6 +34,7 @@ fn vs(
     @location(1) normal: vec3<f32>,
     @location(2) uv: vec2<f32>,
     @location(3) tangent: vec4<f32>,
+    @location(4) barycentric: vec3<f32>,
 ) -> VertexOut {
     // Get instance data
     let instance = instances[instanceIndex];

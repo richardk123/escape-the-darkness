@@ -27,7 +27,6 @@ pub const Engine = struct {
     meshes: mesh.Meshes,
     mesh_renderers: MeshRenderers,
     vertex_buffer: GPUBuffer(mesh.Vertex),
-    index_buffer: GPUBuffer(u32),
     instance_buffer: GPUBuffer(MeshInstanceGPU),
     sounds_texture: SoundTexture,
     camera: Camera,
@@ -44,17 +43,12 @@ pub const Engine = struct {
         // Load all defined meshes
         const meshes = try mesh.Meshes.init(allocator);
 
-        // Create a vertex buffer.
+        // Create vertex buffer.
         const total_num_vertices = @as(u32, @intCast(meshes.vertices.items.len));
         const vertex_buffer = GPUBuffer(mesh.Vertex).init(gctx, .{ .copy_dst = true, .vertex = true }, total_num_vertices);
         vertex_buffer.write(meshes.vertices.items);
 
-        // Create an index buffer.
-        const total_num_indices = @as(u32, @intCast(meshes.indices.items.len));
-        const index_buffer = GPUBuffer(u32).init(gctx, .{ .copy_dst = true, .index = true }, total_num_indices);
-        index_buffer.write(meshes.indices.items);
-
-        // Create an instances buffer
+        // Create instances buffer
         const instances_buffer_usage: wgpu.BufferUsage = .{ .copy_dst = true, .storage = true };
         const instances_buffer = GPUBuffer(MeshInstanceGPU).init(gctx, instances_buffer_usage, Constants.MAX_INSTANCE_COUNT);
 
@@ -75,7 +69,6 @@ pub const Engine = struct {
             .renderer = renderer,
             .meshes = meshes,
             .vertex_buffer = vertex_buffer,
-            .index_buffer = index_buffer,
             .instance_buffer = instances_buffer,
             .mesh_renderers = mesh_renderers,
             .sounds_texture = sounds_texture,
@@ -123,22 +116,19 @@ pub const Engine = struct {
                 const material = mi.material;
                 const mesh_index = mi.mesh_index;
                 const vb_info = gctx.lookupResourceInfo(self.vertex_buffer.gpu_buffer) orelse break :pass;
-                const ib_info = gctx.lookupResourceInfo(self.index_buffer.gpu_buffer) orelse break :pass;
                 const pipeline = gctx.lookupResource(material.pipeline) orelse break :pass;
                 const bind_group = gctx.lookupResource(material.bind_group) orelse break :pass;
 
                 pass.setVertexBuffer(0, vb_info.gpuobj.?, 0, vb_info.size);
-                pass.setIndexBuffer(ib_info.gpuobj.?, .uint32, 0, ib_info.size);
                 pass.setPipeline(pipeline);
 
                 const instance_count = @as(u32, @intCast(mi.instances.items.len));
                 pass.setBindGroup(0, bind_group, &.{uniform_mem.offset});
 
                 const instance_offset = @as(u32, @intCast(mi.offset));
-                pass.drawIndexed(
-                    self.meshes.meshes.items[mesh_index].num_indices,
+                pass.draw(
+                    self.meshes.meshes.items[mesh_index].num_vertices,
                     instance_count,
-                    self.meshes.meshes.items[mesh_index].index_offset,
                     self.meshes.meshes.items[mesh_index].vertex_offset,
                     instance_offset,
                 );

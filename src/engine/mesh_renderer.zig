@@ -63,7 +63,7 @@ pub const MeshRenderers = struct {
 };
 
 pub const MeshRenderer = struct {
-    material: Material(Vertex),
+    material: Material,
     normal_texture: ModelTexture,
     mesh_index: usize,
     instances: std.ArrayList(MeshInstance),
@@ -77,9 +77,9 @@ pub const MeshRenderer = struct {
         const mesh_index = @as(usize, @intFromEnum(mesh_type));
         const normal_texture = try ModelTexture.init(&engine.renderer, engine.allocator, mesh_type.getNormalTextureName());
         const material = switch (material_type) {
-            .echolocation => Material(Vertex).init(engine, material_type, .triangle_list, &normal_texture),
-            .wireframe => Material(Vertex).init(engine, material_type, .line_list, null),
-            .sound_texture => Material(Vertex).init(engine, material_type, .triangle_list, null),
+            .echolocation => Material.init(engine, material_type, .triangle_list, &normal_texture),
+            .wireframe => Material.init(engine, material_type, .line_list, null),
+            .sound_texture => Material.init(engine, material_type, .triangle_list, null),
         };
 
         const instances = try std.ArrayList(MeshInstance).initCapacity(engine.allocator, Constants.MAX_INSTANCE_COUNT);

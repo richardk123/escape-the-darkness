@@ -35,6 +35,7 @@ fn vs(
     @location(1) normal: vec3<f32>,
     @location(2) uv: vec2<f32>,
     @location(3) tangent: vec4<f32>,
+    @location(4) barycentric: vec3<f32>,
 ) -> VertexOut {
     let instance = instances[instanceIndex];
     let clip_pos = uniforms.projection_matrix * uniforms.view_matrix * instance.model_matrix * vec4<f32>(position, 1.0);

@@ -1,10 +1,9 @@
 const std = @import("std");
 const zmesh = @import("zmesh");
-const expect = std.testing.expect;
 const zgpu = @import("zgpu");
 const ModelTexture = @import("common/texture.zig").ModelTexture;
 
-// Enum of predefined sound files
+// Enum of predefined mesh types
 pub const MeshType = enum {
     cube,
     monkey,
@@ -12,7 +11,8 @@ pub const MeshType = enum {
     terrain,
     ship,
     flare,
-    // Returns the file path for each sound
+
+    // Returns the file name for each mesh
     pub fn getName(self: MeshType) [:0]const u8 {
         return switch (self) {
             .cube => "cube2",
@@ -23,6 +23,7 @@ pub const MeshType = enum {
             .flare => "flare",
         };
     }
+
     pub fn getNormalTextureName(self: MeshType) [:0]const u8 {
         return switch (self) {
             .cube => "stone_wall_normal.png",
@@ -35,17 +36,16 @@ pub const MeshType = enum {
     }
 };
 
-pub const Vertex = extern struct {
+pub const Vertex = struct {
     position: [3]f32 align(16),
     normal: [3]f32 align(16),
     uv: [2]f32 align(8),
     tangent: [4]f32 align(16),
+    barycentric: [3]f32 align(16),
 };
 
 pub const Mesh = struct {
-    index_offset: u32,
-    vertex_offset: i32,
-    num_indices: u32,
+    vertex_offset: u32,
     num_vertices: u32,
 };
 
@@ -53,7 +53,6 @@ pub const Meshes = struct {
     allocator: std.mem.Allocator,
     meshes: std.ArrayList(Mesh),
     vertices: std.ArrayList(Vertex),
-    indices: std.ArrayList(u32),
 
     pub fn init(allocator: std.mem.Allocator) !Meshes {
         zmesh.init(allocator);
@@ -62,7 +61,6 @@ pub const Meshes = struct {
             .allocator = allocator,
             .meshes = std.ArrayList(Mesh).init(allocator),
             .vertices = std.ArrayList(Vertex).init(allocator),
-            .indices = std.ArrayList(u32).init(allocator),
         };
 
         inline for (comptime std.enums.values(MeshType)) |mesh_type| {
@@ -79,15 +77,16 @@ pub const Meshes = struct {
         var mesh_indices = std.ArrayList(u32).init(self.allocator);
         var mesh_positions = std.ArrayList([3]f32).init(self.allocator);
         var mesh_normals = std.ArrayList([3]f32).init(self.allocator);
-        var uv = std.ArrayList([2]f32).init(self.allocator);
-        var tangents = std.ArrayList([4]f32).init(self.allocator);
+        var mesh_uvs = std.ArrayList([2]f32).init(self.allocator);
+        var mesh_tangents = std.ArrayList([4]f32).init(self.allocator);
 
         defer mesh_indices.deinit();
         defer mesh_positions.deinit();
         defer mesh_normals.deinit();
-        defer uv.deinit();
-        defer tangents.deinit();
+        defer mesh_uvs.deinit();
+        defer mesh_tangents.deinit();
 
+        // Load mesh data from GLTF file
         try zmesh.io.zcgltf.appendMeshPrimitive(
             data,
             0, // mesh index
@@ -95,61 +94,65 @@ pub const Meshes = struct {
             &mesh_indices,
             &mesh_positions,
             &mesh_normals, // normals (optional)
-            &uv, // texcoords (optional)
-            &tangents, // tangents (optional)
+            &mesh_uvs, // texcoords (optional)
+            &mesh_tangents, // tangents (optional)
         );
 
-        //TODO:
-        if (std.mem.eql(u8, mesh_file, "cube2")) {
-            std.debug.print("tangents: {any} \n", .{tangents.items});
-            std.debug.print("normals: {any} \n", .{mesh_normals.items});
-            std.debug.print("uv: {any} \n", .{uv.items});
-        }
-        const pre_indices_len = self.indices.items.len;
-        const pre_vertices_len = self.vertices.items.len;
+        // Record the starting vertex index before adding new vertices
+        const vertex_offset = @as(u32, @intCast(self.vertices.items.len));
 
-        // Add mesh array index data
-        try self.meshes.append(.{
-            .index_offset = @as(u32, @intCast(pre_indices_len)),
-            .vertex_offset = @as(i32, @intCast(pre_vertices_len)),
-            .num_indices = @as(u32, @intCast(mesh_indices.items.len)),
-            .num_vertices = @as(u32, @intCast(mesh_positions.items.len)),
-        });
+        // Process indices as triangles (3 vertices per triangle)
+        var i: usize = 0;
+        while (i < mesh_indices.items.len) : (i += 3) {
+            // Process one triangle at a time
+            const idx1 = mesh_indices.items[i];
+            const idx2 = mesh_indices.items[i + 1];
+            const idx3 = mesh_indices.items[i + 2];
 
-        // Try with capacity reservation to avoid multiple allocations
-        try self.vertices.ensureTotalCapacity(self.vertices.items.len + mesh_positions.items.len);
-        for (mesh_positions.items, 0..) |_, index| {
-            const vertex_uv = if (index < uv.items.len)
-                uv.items[index]
-            else
-                .{ 0.0, 0.0 };
-
-            const vertex_tangent = if (index < tangents.items.len)
-                tangents.items[index]
-            else
-                .{ 1.0, 0.0, 0.0, 1.0 };
-
-            const vertex_normal = if (index < mesh_normals.items.len)
-                mesh_normals.items[index]
-            else
-                .{ 0.0, 1.0, 0.0 };
+            // Add the three vertices of the triangle with correct barycentric coordinates
+            try self.vertices.append(.{
+                .position = mesh_positions.items[idx1],
+                .normal = getOptionalAttribute(idx1, mesh_normals, .{ 0.0, 1.0, 0.0 }),
+                .uv = getOptionalAttribute(idx1, mesh_uvs, .{ 0.0, 0.0 }),
+                .tangent = getOptionalAttribute(idx1, mesh_tangents, .{ 1.0, 0.0, 0.0, 1.0 }),
+                .barycentric = .{ 1.0, 0.0, 0.0 },
+            });
 
             try self.vertices.append(.{
-                .position = mesh_positions.items[index],
-                .normal = vertex_normal,
-                .uv = vertex_uv,
-                .tangent = vertex_tangent,
+                .position = mesh_positions.items[idx2],
+                .normal = getOptionalAttribute(idx2, mesh_normals, .{ 0.0, 1.0, 0.0 }),
+                .uv = getOptionalAttribute(idx2, mesh_uvs, .{ 0.0, 0.0 }),
+                .tangent = getOptionalAttribute(idx2, mesh_tangents, .{ 1.0, 0.0, 0.0, 1.0 }),
+                .barycentric = .{ 0.0, 1.0, 0.0 },
+            });
+
+            try self.vertices.append(.{
+                .position = mesh_positions.items[idx3],
+                .normal = getOptionalAttribute(idx3, mesh_normals, .{ 0.0, 1.0, 0.0 }),
+                .uv = getOptionalAttribute(idx3, mesh_uvs, .{ 0.0, 0.0 }),
+                .tangent = getOptionalAttribute(idx3, mesh_tangents, .{ 1.0, 0.0, 0.0, 1.0 }),
+                .barycentric = .{ 0.0, 0.0, 1.0 },
             });
         }
 
-        // appe
-        try self.indices.appendSlice(mesh_indices.items);
+        // Add the mesh entry
+        try self.meshes.append(.{
+            .vertex_offset = vertex_offset,
+            .num_vertices = @as(u32, @intCast(self.vertices.items.len - vertex_offset)),
+        });
+    }
+
+    // Helper function to safely get an attribute from a list or return default
+    fn getOptionalAttribute(index: u32, list: anytype, default: @TypeOf(list.items[0])) @TypeOf(list.items[0]) {
+        if (index < list.items.len) {
+            return list.items[index];
+        }
+        return default;
     }
 
     pub fn deinit(self: *Meshes) void {
         self.meshes.deinit();
         self.vertices.deinit();
-        self.indices.deinit();
         zmesh.deinit();
     }
 };

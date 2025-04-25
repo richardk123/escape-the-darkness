@@ -1,12 +1,18 @@
 const std = @import("std");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
+const mesh = @import("../mesh.zig");
 
-pub fn GPULayout(comptime T: type) type {
+pub const VertexLayout = struct {
+    pub fn init() [1]wgpu.VertexBufferLayout {
+        const vertex_layout = createVertexLayout(mesh.Vertex, 0).init();
+        return [_]wgpu.VertexBufferLayout{vertex_layout};
+    }
+};
+
+fn createVertexLayout(comptime T: type, comptime shader_location_offset: u32) type {
     return struct {
-        const Self = @This();
-
-        pub fn createVertexBufferLayouts() [1]wgpu.VertexBufferLayout {
+        pub fn init() wgpu.VertexBufferLayout {
             const fields = comptime std.meta.fields(T);
 
             const vertex_attributes = comptime blk: {
@@ -17,17 +23,18 @@ pub fn GPULayout(comptime T: type) type {
                     attrs[i] = .{
                         .format = format,
                         .offset = @offsetOf(T, field.name),
-                        .shader_location = i,
+                        .shader_location = shader_location_offset + i,
                     };
                 }
                 break :blk attrs;
             };
 
-            return [_]wgpu.VertexBufferLayout{.{
+            return wgpu.VertexBufferLayout{
                 .array_stride = @sizeOf(T),
+                .step_mode = .vertex,
                 .attribute_count = vertex_attributes.len,
                 .attributes = &vertex_attributes,
-            }};
+            };
         }
 
         fn getVertexFormat(field: std.builtin.Type.StructField) wgpu.VertexFormat {

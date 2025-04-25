@@ -44,7 +44,8 @@ pub fn main() !void {
         const angle = @as(f32, @floatFromInt(i)) / @as(f32, count) * 2.0 * std.math.pi;
         const x = std.math.cos(angle) * radius;
         const z = std.math.sin(angle) * radius;
-        _ = monkey.addInstance(.{ x, 2.0, z }, zm.quatFromRollPitchYaw(1.14, 1.14, 0), null);
+        // _ = monkey.addInstance(.{ x, 2.0, z }, zm.quatFromRollPitchYaw(1.14, 1.14, 0), null);
+        _ = monkey.addInstance(.{ x, 2.0, z }, null, null);
     }
 
     var plane_echo = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.plane);
