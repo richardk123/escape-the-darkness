@@ -204,10 +204,10 @@ pub const SoundManager = struct {
     pub fn play(self: *SoundManager, sound_file: SoundFile, position: [3]f32) !u32 {
         const sound = try self.engine.createSoundFromFile(sound_file.getPath(), .{ .flags = .{ .stream = true } });
         sound.setSpatializationEnabled(true);
-        sound.setDopplerFactor(5.0);
+        sound.setDopplerFactor(1.0);
         sound.setMinDistance(0.1);
         sound.setMaxDistance(1000.0);
-        sound.setAttenuationModel(.linear);
+        sound.setAttenuationModel(.exponential);
         sound.setVolume(5.0);
         const sound_data = self.data.findSoundData(sound_file);
 

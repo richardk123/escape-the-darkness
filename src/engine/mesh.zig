@@ -8,6 +8,7 @@ pub const MeshType = enum {
     cube,
     monkey,
     plane,
+    floor,
     terrain,
     ship,
     flare,
@@ -18,6 +19,7 @@ pub const MeshType = enum {
             .cube => "cube2",
             .monkey => "monkey",
             .plane => "plane",
+            .floor => "floor",
             .terrain => "terrain",
             .ship => "space-ship",
             .flare => "flare",
@@ -30,6 +32,7 @@ pub const MeshType = enum {
             .monkey => "stone_wall_normal.png",
             .plane => "stone_wall_normal.png",
             .terrain => "stone_wall_normal.png",
+            .floor => "stone_wall_normal.png",
             .ship => "stone_wall_normal.png",
             .flare => "stone_wall_normal.png",
         };

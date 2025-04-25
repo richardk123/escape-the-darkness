@@ -48,11 +48,14 @@ pub fn main() !void {
         _ = monkey.addInstance(.{ x, 2.0, z }, null, null);
     }
 
-    var plane_echo = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.plane);
-    _ = plane_echo.addInstance(.{ 0.0, 0.0, 0.0 }, null, .{ 5000, 5000, 5000 });
+    var floor = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.floor);
+    _ = floor.addInstance(.{ 0.0, 0.0, 0.0 }, null, null);
+
+    // var plane_echo = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.plane);
+    // _ = plane_echo.addInstance(.{ 0.0, 0.0, 0.0 }, null, .{ 5000, 5000, 5000 });
 
     var terrain = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.terrain);
-    _ = terrain.addInstance(.{ 0.0, 0.0, 50.0 }, null, null);
+    _ = terrain.addInstance(.{ 0.0, 0.1, 50.0 }, null, null);
 
     var debug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
     _ = debug_sound_quad.addInstance(.{ 0.0, 0.1, 0.0 }, null, null);

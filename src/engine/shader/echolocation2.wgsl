@@ -104,12 +104,15 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
     let barys = in.barycentric;
     let deltas = fwidth(barys);
     let smoothing = deltas * 1.0;
-    let thickness = deltas * 0.25;
-    let smoothedges = smoothstep(vec3(0.0), smoothing, barys);
+    let thickness = deltas * 0.75; // This is your thickness parameter
+
+    // Create a wireframe effect with thickness control
+    let thresholds = smoothing + thickness;
+    let smoothedges = smoothstep(thickness, thresholds, barys);
     let edge = min(min(smoothedges.x, smoothedges.y), smoothedges.z);
 
     // Change this to make wireframes more visible
-    let wireframe_color = vec3<f32>(0.1);
+    let wireframe_color = result + result * vec3<f32>(0.4);
     let final_color = mix(wireframe_color, result, edge);
     return vec4(final_color, 1.0);
 
