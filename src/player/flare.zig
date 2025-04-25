@@ -22,7 +22,7 @@ pub const Flares = struct {
         return .{
             .engine = engine,
             .flares = std.ArrayList(Flare).init(engine.allocator),
-            .flare_renderer = try engine.addMeshRenderer(mat.MaterialType.echolocation, mesh.MeshType.flare),
+            .flare_renderer = try engine.addMeshRenderer(mat.MaterialType.echolocation, mesh.MeshType.sphere),
         };
     }
 
@@ -35,7 +35,7 @@ pub const Flares = struct {
         }
 
         if (window.getKey(.space) == .press and self.cooldown_timer <= 0) {
-            const flare_mesh_id = self.flare_renderer.addInstance(player_pos, null, .{ 4, 4, 4 });
+            const flare_mesh_id = self.flare_renderer.addInstance(player_pos, null, .{ 0.5, 0.5, 0.5 });
             const sound_id = self.engine.sound_manager.play(sm.SoundFile.flare, player_pos, FLARE_COLOR) catch @panic("cannot play flare sound");
             self.flares.append(.{
                 .mesh_instance_id = flare_mesh_id,

@@ -3,6 +3,7 @@ const SOUND_SPEED = 300.0; // meters per second
 const SAMPLE_RATE = 48000.0; // samples per second
 const SOUND_BRIGHTNESS = 100.0;
 const SOUND_PROPAGATION_QUADRATIC = 0.02;
+const DISPLACEMENT_SCALE = 2; // Controls the strength of vertex displacement
 
 struct SoundInstanceData {
     offset: u32,
@@ -30,93 +31,17 @@ struct Uniforms {
 struct VertexOut {
     @builtin(position) position: vec4<f32>,
     @location(0) @interpolate(linear) world_position: vec3<f32>,
-    @location(1) normal: vec3<f32>,
+    @location(1) @interpolate(linear) normal: vec3<f32>,
     @location(2) @interpolate(linear) barycentric: vec3<f32>,
     @location(3) @interpolate(linear) view_position: vec3<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read> instances: array<Instance>;
-@vertex
-fn vs(
-    @builtin(instance_index) instanceIndex: u32,
-    @builtin(vertex_index) vertexIndex: u32,
-    @location(0) position: vec3<f32>,
-    @location(1) normal: vec3<f32>,
-    @location(2) uv: vec2<f32>,
-    @location(3) tangent: vec4<f32>,
-    @location(4) barycentric: vec3<f32>,
-) -> VertexOut {
-    let instance = instances[instanceIndex];
-    let worldPos = instance.model_matrix * vec4<f32>(position, 1.0);
-    let viewPos = uniforms.view_matrix * worldPos;
-    let clipPos = uniforms.projection_matrix * viewPos;
-
-    var output: VertexOut;
-    output.position = clipPos;
-    output.world_position = worldPos.xyz;
-    output.view_position = viewPos.xyz;
-    output.normal = normalize(normal * mat3x3(
-         instance.model_matrix[0].xyz,
-         instance.model_matrix[1].xyz,
-         instance.model_matrix[2].xyz,
-    ));
-
-    // output.normal = normalize((instance.model_matrix * vec4<f32>(normal, 0.0)).xyz);
-    output.barycentric = barycentric;
-    return output;
-}
-
 @group(0) @binding(2) var image: texture_2d<f32>;
 @group(0) @binding(3) var image_sampler: sampler;
 @group(0) @binding(4) var normal_map: texture_2d<f32>;
 @group(0) @binding(5) var normal_map_sampler: sampler;
-@fragment
-fn fs(in: VertexOut) -> @location(0) vec4<f32> {
-    var n = normalize(in.normal);
-
-    let view_dir = normalize(uniforms.camera_position - in.world_position);
-    var result = vec3<f32>(0.0);
-
-    for (var i: u32 = 0; i < uniforms.sound_count; i++) {
-        let sound = uniforms.sound_instances[i];
-        let sound_color = sound.color;
-        let sound_dir = normalize(sound.position - in.world_position);
-        let distance = length(sound.position - in.world_position) +
-                      length(in.world_position - uniforms.camera_position);
-        let sound_intensity = getSoundIntensity(sound, distance);
-
-        // Calculate attenuation based on total sound travel distance
-        let attenuation = SOUND_BRIGHTNESS * sound_intensity /
-                         (SOUND_PROPAGATION_QUADRATIC * distance * distance);
-
-        // Calculate how much sound energy gets reflected toward camera
-        let reflection_factor = max(dot(n, view_dir), 0.0);
-        let diffuse = max(dot(n, sound_dir), 0.0);
-        result += diffuse * attenuation * sound_color;
-    }
-
-    // Apply tone mapping and gamma correction
-    result = result / (result + vec3<f32>(1.0)); // Simple Reinhard tone mapping
-    result = pow(result, vec3<f32>(1.0/2.2));    // Gamma correction
-    let distance = distance(in.view_position, uniforms.camera_position);
-
-    // wireframe
-    let barys = in.barycentric;
-    let deltas = fwidth(barys);
-    let smoothing = deltas * 1.0;
-    let thickness = deltas * 20.75 * (1 / distance);
-
-    // Create a wireframe effect with thickness control
-    let thresholds = smoothing + thickness;
-    let smoothedges = smoothstep(thickness, thresholds, barys);
-    let edge = min(min(smoothedges.x, smoothedges.y), smoothedges.z);
-
-    // Change this to make wireframes more visible
-    let wireframe_color = result + result * vec3<f32>(0.5);
-    let final_color = mix(wireframe_color, result, edge);
-    return vec4(final_color, 1.0);
-}
 
 fn getSoundIntensity(sound: SoundInstanceData, distance: f32) -> f32 {
     // Calculate time delay in samples
@@ -180,4 +105,126 @@ fn getSoundIntensity(sound: SoundInstanceData, distance: f32) -> f32 {
 
     // Convert from normalized [0,1] to intensity
     return raw_value;
+}
+
+@vertex
+fn vs(
+    @builtin(instance_index) instanceIndex: u32,
+    @builtin(vertex_index) vertexIndex: u32,
+    @location(0) position: vec3<f32>,
+    @location(1) normal: vec3<f32>,
+    @location(2) uv: vec2<f32>,
+    @location(3) tangent: vec4<f32>,
+    @location(4) barycentric: vec3<f32>,
+) -> VertexOut {
+    let instance = instances[instanceIndex];
+
+    // Transform vertex position to world space before displacement
+    let initialWorldPos = (instance.model_matrix * vec4<f32>(position, 1.0)).xyz;
+
+    // Calculate displacement from all sound sources
+    var displacement = vec3<f32>(0.0);
+    var totalIntensity = 0.0;
+
+    for (var i: u32 = 0; i < uniforms.sound_count; i++) {
+        let sound = uniforms.sound_instances[i];
+        let distance = length(sound.position - initialWorldPos) +
+                      length(initialWorldPos - uniforms.camera_position);
+
+        if (distance > 0.001) { // Avoid division by zero
+            let sound_dir = normalize(initialWorldPos - sound.position);
+            let sound_intensity = getSoundIntensity(sound, distance);
+
+            // Calculate base attenuation
+            let attenuation = SOUND_BRIGHTNESS * sound_intensity /
+                            (SOUND_PROPAGATION_QUADRATIC * distance * distance);
+
+            // Approximate tone mapping (Reinhard) for the displacement magnitude
+            // This mimics how the fragment shader will tone-map the colors
+            let tone_mapped = attenuation / (attenuation + 1.0);
+
+            // Approximate gamma correction
+            let gamma_corrected = pow(tone_mapped, 1.0/2.2);
+
+            // Apply the processed value for displacement
+            let displacement_factor = gamma_corrected * DISPLACEMENT_SCALE;
+
+            // Add this sound's contribution to total displacement
+            displacement += sound_dir * displacement_factor;
+            totalIntensity += displacement_factor;
+        }
+    }
+
+    // Apply a cap to avoid extreme displacement
+    let max_displacement = 5.0;  // Adjust this value as needed
+    if (length(displacement) > max_displacement) {
+        displacement = normalize(displacement) * max_displacement;
+    }
+
+    // Apply displacement to world position
+    let displacedWorldPos = initialWorldPos + displacement;
+
+    // Transform back to model space (unnecessary in this case since we're working in world space)
+    // And then continue with the normal pipeline
+    let viewPos = uniforms.view_matrix * vec4<f32>(displacedWorldPos, 1.0);
+    let clipPos = uniforms.projection_matrix * viewPos;
+
+    var output: VertexOut;
+    output.position = clipPos;
+    output.world_position = displacedWorldPos;
+    output.view_position = viewPos.xyz;
+    output.normal = normalize(normal * mat3x3(
+         instance.model_matrix[0].xyz,
+         instance.model_matrix[1].xyz,
+         instance.model_matrix[2].xyz,
+    ));
+    output.barycentric = barycentric;
+    return output;
+}
+
+@fragment
+fn fs(in: VertexOut) -> @location(0) vec4<f32> {
+    var n = normalize(in.normal);
+
+    let view_dir = normalize(uniforms.camera_position - in.world_position);
+    var result = vec3<f32>(0.0);
+
+    for (var i: u32 = 0; i < uniforms.sound_count; i++) {
+        let sound = uniforms.sound_instances[i];
+        let sound_color = sound.color;
+        let sound_dir = normalize(sound.position - in.world_position);
+        let distance = length(sound.position - in.world_position) +
+                      length(in.world_position - uniforms.camera_position);
+        let sound_intensity = getSoundIntensity(sound, distance);
+
+        // Calculate attenuation based on total sound travel distance
+        let attenuation = SOUND_BRIGHTNESS * sound_intensity /
+                         (SOUND_PROPAGATION_QUADRATIC * distance * distance);
+
+        // Calculate how much sound energy gets reflected toward camera
+        let reflection_factor = max(dot(n, view_dir), 0.0);
+        let diffuse = max(dot(n, sound_dir), 0.0);
+        result += diffuse * attenuation * sound_color;
+    }
+
+    // Apply tone mapping and gamma correction
+    result = result / (result + vec3<f32>(1.0)); // Simple Reinhard tone mapping
+    result = pow(result, vec3<f32>(1.0/2.2));    // Gamma correction
+    let distance = distance(in.view_position, uniforms.camera_position);
+
+    // wireframe
+    let barys = in.barycentric;
+    let deltas = fwidth(barys);
+    let smoothing = deltas * 1.0;
+    let thickness = deltas * 10.75 * (1 / distance);
+
+    // Create a wireframe effect with thickness control
+    let thresholds = smoothing + thickness;
+    let smoothedges = smoothstep(thickness, thresholds, barys);
+    let edge = min(min(smoothedges.x, smoothedges.y), smoothedges.z);
+
+    // Change this to make wireframes more visible
+    let wireframe_color = result + result * vec3<f32>(0.5);
+    let final_color = mix(wireframe_color, result, edge);
+    return vec4(final_color, 1.0);
 }

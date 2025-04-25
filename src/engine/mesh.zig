@@ -6,35 +6,29 @@ const ModelTexture = @import("common/texture.zig").ModelTexture;
 // Enum of predefined mesh types
 pub const MeshType = enum {
     cube,
-    monkey,
-    plane,
+    cube_long,
     floor,
-    terrain,
-    ship,
-    flare,
+    sphere,
+    plane,
 
     // Returns the file name for each mesh
     pub fn getName(self: MeshType) [:0]const u8 {
         return switch (self) {
-            .cube => "cube2",
-            .monkey => "monkey",
-            .plane => "plane",
+            .cube => "cube_2x2x2",
+            .cube_long => "cube_2x2x6",
             .floor => "floor",
-            .terrain => "terrain",
-            .ship => "space-ship",
-            .flare => "flare",
+            .sphere => "sphere_2x2x2",
+            .plane => "plane",
         };
     }
 
     pub fn getNormalTextureName(self: MeshType) [:0]const u8 {
         return switch (self) {
             .cube => "stone_wall_normal.png",
-            .monkey => "stone_wall_normal.png",
-            .plane => "stone_wall_normal.png",
-            .terrain => "stone_wall_normal.png",
+            .cube_long => "stone_wall_normal.png",
             .floor => "stone_wall_normal.png",
-            .ship => "stone_wall_normal.png",
-            .flare => "stone_wall_normal.png",
+            .sphere => "stone_wall_normal.png",
+            .plane => "stone_wall_normal.png",
         };
     }
 };

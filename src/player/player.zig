@@ -12,8 +12,8 @@ pub const Player = struct {
     flares: Flares,
 
     pub fn init(engine: *Engine) !Player {
-        const ship_renderer = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.ship);
-        const ship_id = ship_renderer.addInstance(.{ 0.0, 2.0, 0.0 }, null, null);
+        const ship_renderer = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.sphere);
+        const ship_id = ship_renderer.addInstance(.{ 0.0, 2.0, -10.0 }, null, null);
         const flares = try Flares.init(engine);
 
         return .{

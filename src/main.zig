@@ -37,7 +37,7 @@ pub fn main() !void {
     var gui = GUI.init(allocator, window, &engine);
     defer gui.deinit();
 
-    var monkey = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.monkey);
+    var cube_long = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.cube_long);
     const count = 10;
     const radius: f32 = 10.0;
     for (0..count) |i| {
@@ -45,7 +45,7 @@ pub fn main() !void {
         const x = std.math.cos(angle) * radius;
         const z = std.math.sin(angle) * radius;
         // _ = monkey.addInstance(.{ x, 2.0, z }, zm.quatFromRollPitchYaw(1.14, 1.14, 0), null);
-        _ = monkey.addInstance(.{ x, 2.0, z }, null, null);
+        _ = cube_long.addInstance(.{ x, 1.0, z }, null, null);
     }
 
     var floor = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.floor);
@@ -53,9 +53,6 @@ pub fn main() !void {
 
     // var plane_echo = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.plane);
     // _ = plane_echo.addInstance(.{ 0.0, 0.0, 0.0 }, null, .{ 5000, 5000, 5000 });
-
-    var terrain = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.terrain);
-    _ = terrain.addInstance(.{ 0.0, 0.1, 50.0 }, null, null);
 
     // var debug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
     // _ = debug_sound_quad.addInstance(.{ 0.0, 0.1, 0.0 }, null, null);
