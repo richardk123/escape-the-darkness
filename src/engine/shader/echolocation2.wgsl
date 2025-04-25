@@ -29,9 +29,10 @@ struct Uniforms {
 
 struct VertexOut {
     @builtin(position) position: vec4<f32>,
-    @location(0) world_position: vec3<f32>,
+    @location(0) @interpolate(linear) world_position: vec3<f32>,
     @location(1) normal: vec3<f32>,
     @location(2) @interpolate(linear) barycentric: vec3<f32>,
+    @location(3) @interpolate(linear) view_position: vec3<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -54,6 +55,7 @@ fn vs(
     var output: VertexOut;
     output.position = clipPos;
     output.world_position = worldPos.xyz;
+    output.view_position = viewPos.xyz;
     output.normal = normalize(normal * mat3x3(
          instance.model_matrix[0].xyz,
          instance.model_matrix[1].xyz,
@@ -76,9 +78,6 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
     let view_dir = normalize(uniforms.camera_position - in.world_position);
     var result = vec3<f32>(0.0);
 
-    // return vec4<f32>(n * 0.5 + 0.5, 1.0);
-
-    // return vec4(in.normal, 1.0);
     for (var i: u32 = 0; i < uniforms.sound_count; i++) {
         let sound = uniforms.sound_instances[i];
         let sound_color = sound.color;
@@ -100,13 +99,13 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
     // Apply tone mapping and gamma correction
     result = result / (result + vec3<f32>(1.0)); // Simple Reinhard tone mapping
     result = pow(result, vec3<f32>(1.0/2.2));    // Gamma correction
-
+    let distance = distance(in.view_position, uniforms.camera_position);
 
     // wireframe
     let barys = in.barycentric;
     let deltas = fwidth(barys);
     let smoothing = deltas * 1.0;
-    let thickness = deltas * 0.75; // This is your thickness parameter
+    let thickness = deltas * 20.75 * (1 / distance);
 
     // Create a wireframe effect with thickness control
     let thresholds = smoothing + thickness;
@@ -114,11 +113,9 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
     let edge = min(min(smoothedges.x, smoothedges.y), smoothedges.z);
 
     // Change this to make wireframes more visible
-    let wireframe_color = result + result * vec3<f32>(0.1);
+    let wireframe_color = result + result * vec3<f32>(0.5);
     let final_color = mix(wireframe_color, result, edge);
     return vec4(final_color, 1.0);
-
-    // return vec4<f32>(result, 1.0);
 }
 
 fn getSoundIntensity(sound: SoundInstanceData, distance: f32) -> f32 {

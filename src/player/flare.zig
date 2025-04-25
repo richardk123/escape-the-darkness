@@ -8,8 +8,8 @@ const mesh = @import("../engine/mesh.zig");
 const sm = @import("../engine/sound/sound_manager.zig");
 const Constants = @import("../engine/common/constants.zig");
 
-const FLARE_COLOR: [3]f32 = .{ 0, 0, 1 };
-const EXPLOSION_COLOR: [3]f32 = .{ 0, 1, 1 };
+const FLARE_COLOR: [3]f32 = .{ 0, 0, 0.6 };
+const EXPLOSION_COLOR: [3]f32 = .{ 1, 1, 0 };
 
 pub const Flares = struct {
     engine: *Engine,

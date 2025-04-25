@@ -57,8 +57,8 @@ pub fn main() !void {
     var terrain = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.terrain);
     _ = terrain.addInstance(.{ 0.0, 0.1, 50.0 }, null, null);
 
-    var debug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
-    _ = debug_sound_quad.addInstance(.{ 0.0, 0.1, 0.0 }, null, null);
+    // var debug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
+    // _ = debug_sound_quad.addInstance(.{ 0.0, 0.1, 0.0 }, null, null);
 
     var free_camera = FreeCamera.init(&engine);
     var player = try Player.init(&engine);
