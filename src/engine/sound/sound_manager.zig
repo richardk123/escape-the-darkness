@@ -141,6 +141,8 @@ pub const SoundInstanceData = extern struct {
     _padding1: u32 = 0,
     position: [3]f32,
     _padding2: u32 = 0,
+    color: [3]f32,
+    _padding3: u32 = 0,
 };
 
 pub const SoundUniform = struct {
@@ -155,7 +157,7 @@ pub const SoundUniform = struct {
         };
         // Initialize all sound data entries
         for (&uniform.instances) |*data| {
-            data.* = .{ .position = .{ 0.0, 0.0, 0.0 } };
+            data.* = .{ .position = .{ 0.0, 0.0, 0.0 }, .color = .{ 0, 0, 0 } };
         }
         return uniform;
     }
@@ -167,6 +169,7 @@ pub const SoundInstance = struct {
     id: usize,
     position: [3]f32 = .{ 0.0, 0.0, 0.0 },
     velocity: [3]f32 = .{ 0.0, 0.0, 0.0 },
+    color: [3]f32,
     // used for delay when player hears the sound
     startDelay: f32 = 0,
     // used for delay after sound played
@@ -201,7 +204,7 @@ pub const SoundManager = struct {
         };
     }
 
-    pub fn play(self: *SoundManager, sound_file: SoundFile, position: [3]f32) !u32 {
+    pub fn play(self: *SoundManager, sound_file: SoundFile, position: [3]f32, color: [3]f32) !u32 {
         const sound = try self.engine.createSoundFromFile(sound_file.getPath(), .{ .flags = .{ .stream = true } });
         sound.setSpatializationEnabled(true);
         sound.setDopplerFactor(1.0);
@@ -218,6 +221,7 @@ pub const SoundManager = struct {
             .sound = sound,
             .instance_data_index = self.instances.items.len,
             .position = position,
+            .color = color,
         });
 
         if (self.instances.items.len <= Constants.MAX_SOUND_COUNT) {
@@ -226,6 +230,7 @@ pub const SoundManager = struct {
             uniform_sound_data.offset = sound_data.offset;
             uniform_sound_data.current_frame = 0;
             uniform_sound_data.position = position;
+            uniform_sound_data.color = color;
             self.uniform.count += 1;
         }
 
@@ -256,7 +261,7 @@ pub const SoundManager = struct {
     // Update loop - call this once per frame to cleanup finished sounds
     pub fn update(self: *SoundManager, camera: *Camera, dt: f32) void {
         self.engine.setListenerPosition(0, camera.position);
-        // self.engine.setListenerVelocity(0, .{ 0, 0, 0 });
+        self.engine.setListenerVelocity(0, .{ 0, 0, 0 });
         self.engine.setListenerDirection(0, camera.forward);
 
         // Iterate backwards to safely remove elements
@@ -265,6 +270,12 @@ pub const SoundManager = struct {
             i -= 1;
             var instance = &self.instances.items[i];
             const sound = instance.sound;
+            sound.setSpatializationEnabled(true);
+            sound.setDopplerFactor(1.0);
+            sound.setMinDistance(0.1);
+            sound.setMaxDistance(1000.0);
+            sound.setAttenuationModel(.exponential);
+            sound.setVolume(5.0);
             instance.startDelay += dt;
 
             const distance = Utils.distance(camera.position, instance.position);

@@ -8,6 +8,9 @@ const mesh = @import("../engine/mesh.zig");
 const sm = @import("../engine/sound/sound_manager.zig");
 const Constants = @import("../engine/common/constants.zig");
 
+const FLARE_COLOR: [3]f32 = .{ 0, 0, 1 };
+const EXPLOSION_COLOR: [3]f32 = .{ 0, 1, 1 };
+
 pub const Flares = struct {
     engine: *Engine,
     flares: std.ArrayList(Flare),
@@ -33,7 +36,7 @@ pub const Flares = struct {
 
         if (window.getKey(.space) == .press and self.cooldown_timer <= 0) {
             const flare_mesh_id = self.flare_renderer.addInstance(player_pos, null, .{ 4, 4, 4 });
-            const sound_id = self.engine.sound_manager.play(sm.SoundFile.flare, player_pos) catch @panic("cannot play flare sound");
+            const sound_id = self.engine.sound_manager.play(sm.SoundFile.flare, player_pos, FLARE_COLOR) catch @panic("cannot play flare sound");
             self.flares.append(.{
                 .mesh_instance_id = flare_mesh_id,
                 .sound_instance_id = sound_id,
@@ -81,7 +84,7 @@ pub const Flares = struct {
                 _ = self.flares.orderedRemove(i);
                 self.engine.sound_manager.stop(sound_id);
                 if (self.flare_renderer.getInstance(flare.mesh_instance_id)) |instance| {
-                    _ = self.engine.sound_manager.play(sm.SoundFile.explosion_medium, .{ instance.position[0], instance.position[1], instance.position[2] }) catch @panic("cannot play explosion sound");
+                    _ = self.engine.sound_manager.play(sm.SoundFile.explosion_medium, .{ instance.position[0], instance.position[1], instance.position[2] }, EXPLOSION_COLOR) catch @panic("cannot play explosion sound");
                 }
             }
         }

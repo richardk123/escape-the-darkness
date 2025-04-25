@@ -30,6 +30,7 @@ pub const GlobalUniform = extern struct {
                 .size = 0,
                 .current_frame = 0,
                 .position = .{ 0.0, 0.0, 0.0 },
+                .color = .{ 0.0, 0.0, 0.0 },
                 ._padding1 = 0,
                 ._padding2 = 0,
             };
@@ -55,6 +56,7 @@ pub const GlobalUniform = extern struct {
                     .size = 0,
                     .current_frame = 0,
                     .position = .{ 0.0, 0.0, 0.0 },
+                    .color = .{ 0, 0, 0 },
                     ._padding1 = 0,
                     ._padding2 = 0,
                 };

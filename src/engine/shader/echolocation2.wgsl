@@ -11,6 +11,8 @@ struct SoundInstanceData {
     _padding1: u32,
     position: vec3<f32>,
     _padding2: u32,
+    color: vec3<f32>,
+    _padding3: u32,
 };
 
 struct Instance {
@@ -70,7 +72,6 @@ fn vs(
 @fragment
 fn fs(in: VertexOut) -> @location(0) vec4<f32> {
     var n = normalize(in.normal);
-    let sound_color = vec3<f32>(1.0); // white light color
 
     let view_dir = normalize(uniforms.camera_position - in.world_position);
     var result = vec3<f32>(0.0);
@@ -80,6 +81,7 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
     // return vec4(in.normal, 1.0);
     for (var i: u32 = 0; i < uniforms.sound_count; i++) {
         let sound = uniforms.sound_instances[i];
+        let sound_color = sound.color;
         let sound_dir = normalize(sound.position - in.world_position);
         let distance = length(sound.position - in.world_position) +
                       length(in.world_position - uniforms.camera_position);
@@ -112,7 +114,7 @@ fn fs(in: VertexOut) -> @location(0) vec4<f32> {
     let edge = min(min(smoothedges.x, smoothedges.y), smoothedges.z);
 
     // Change this to make wireframes more visible
-    let wireframe_color = result + result * vec3<f32>(0.4);
+    let wireframe_color = result + result * vec3<f32>(0.1);
     let final_color = mix(wireframe_color, result, edge);
     return vec4(final_color, 1.0);
 
