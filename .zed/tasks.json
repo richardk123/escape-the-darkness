@@ -1,7 +1,11 @@
 [
   {
-    "label": "build run",
-    "command": "zig build run"
+    "label": "build run-game",
+    "command": "zig build run-game"
+  },
+  {
+    "label": "build run-editor",
+    "command": "zig build run-editor"
   },
   {
     "label": "test file",

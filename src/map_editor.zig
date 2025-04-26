@@ -1,6 +1,6 @@
 const std = @import("std");
 const zglfw = @import("zglfw");
-const GUI = @import("gui.zig").GUI;
+const GUI = @import("editor/gui.zig").GUI;
 const window_title = "Escape the darkness";
 const zm = @import("zmath");
 
@@ -36,26 +36,6 @@ pub fn main() !void {
 
     var gui = GUI.init(allocator, window, &engine);
     defer gui.deinit();
-
-    var cube_long = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.cube_long);
-    const count = 10;
-    const radius: f32 = 10.0;
-    for (0..count) |i| {
-        const angle = @as(f32, @floatFromInt(i)) / @as(f32, count) * 2.0 * std.math.pi;
-        const x = std.math.cos(angle) * radius;
-        const z = std.math.sin(angle) * radius;
-        // _ = monkey.addInstance(.{ x, 2.0, z }, zm.quatFromRollPitchYaw(1.14, 1.14, 0), null);
-        _ = cube_long.addInstance(.{ x, 1.0, z }, null, null);
-    }
-
-    var floor = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.floor);
-    _ = floor.addInstance(.{ 0.0, 0.0, 0.0 }, null, null);
-
-    // var plane_echo = try engine.addMeshRenderer(MaterialType.echolocation, MeshType.plane);
-    // _ = plane_echo.addInstance(.{ 0.0, 0.0, 0.0 }, null, .{ 5000, 5000, 5000 });
-
-    // var debug_sound_quad = try engine.addMeshRenderer(MaterialType.sound_texture, MeshType.plane);
-    // _ = debug_sound_quad.addInstance(.{ 0.0, 0.1, 0.0 }, null, null);
 
     var free_camera = FreeCamera.init(&engine);
     var player = try Player.init(&engine);

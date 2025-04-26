@@ -7,9 +7,9 @@ const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 const content_dir = @import("build_options").content_dir;
 
-const Engine = @import("engine/engine.zig").Engine;
-const SoundFile = @import("engine/sound/sound_manager.zig").SoundFile;
-const mr = @import("engine/mesh_renderer.zig");
+const Engine = @import("../engine/engine.zig").Engine;
+const SoundFile = @import("../engine/sound/sound_manager.zig").SoundFile;
+const mr = @import("../engine/mesh_renderer.zig");
 
 pub const GUI = struct {
     engine: *Engine,

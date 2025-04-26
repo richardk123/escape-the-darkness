@@ -13,6 +13,9 @@ pub const SoundFile = enum {
     water_drop,
     explosion_medium,
     flare,
+    push_stone,
+    siren,
+    engine,
     // Returns the file path for each sound
     pub fn getPath(self: SoundFile) [:0]const u8 {
         return switch (self) {
@@ -21,6 +24,9 @@ pub const SoundFile = enum {
             .water_drop => "content/sound/water-drop.wav",
             .explosion_medium => "content/sound/medium-explosion.wav",
             .flare => "content/sound/3000.wav",
+            .push_stone => "content/sound/push-stone.wav",
+            .siren => "content/sound/siren.wav",
+            .engine => "content/sound/engine.wav",
         };
     }
 };
