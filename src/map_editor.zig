@@ -1,6 +1,6 @@
 const std = @import("std");
 const zglfw = @import("zglfw");
-const GUI = @import("editor/gui.zig").GUI;
+const MapEditorGui = @import("editor/map_editor_gui.zig").MapEditorGui;
 const window_title = "Escape the darkness";
 const zm = @import("zmath");
 
@@ -34,7 +34,7 @@ pub fn main() !void {
     var engine = try Engine.init(allocator, window);
     defer engine.deinit();
 
-    var gui = GUI.init(allocator, window, &engine);
+    var gui = MapEditorGui.init(allocator, window, &engine);
     defer gui.deinit();
 
     var free_camera = FreeCamera.init(&engine);
@@ -43,11 +43,10 @@ pub fn main() !void {
 
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
-        gui.update();
         free_camera.update();
         engine.renderer.beginFrame();
         try engine.update();
-        try gui.draw();
+        try gui.update();
         player.update();
         engine.renderer.finishFrame();
     }

@@ -1,25 +1,64 @@
 const std = @import("std");
 const mesh = @import("../engine/mesh.zig");
 const expect = std.testing.expect;
+const map_path = @import("build_options").content_dir ++ "map.json";
 
-pub const EditorData = struct {
+pub const MapData = struct {
     tiles: std.ArrayList(Tile),
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator) EditorData {
+    pub fn init(allocator: std.mem.Allocator) MapData {
         return .{
             .tiles = std.ArrayList(Tile).init(allocator),
             .allocator = allocator,
         };
     }
 
-    pub fn addTile(self: *EditorData, name: []const u8) void {
+    pub fn addTile(self: *MapData, name: []const u8) void {
         const name_copy = self.allocator.dupe(u8, name) catch @panic("Cannot copy tile name");
         const tile = Tile.init(self.allocator, name_copy);
         self.tiles.append(tile) catch @panic("Cannot add tile");
     }
 
-    pub fn toJson(self: *EditorData) ![]u8 {
+    pub fn getLastTile(self: *MapData) *Tile {
+        return &self.tiles.items[self.tiles.items.len - 1];
+    }
+
+    pub fn save(self: *MapData) !void {
+        const json_string = try self.toJson();
+        defer self.allocator.free(json_string);
+
+        // Open file for writing
+        const file = try std.fs.cwd().createFile(map_path, .{});
+        defer file.close();
+
+        // Write the JSON data to the file
+        try file.writeAll(json_string);
+    }
+
+    pub fn load(allocator: std.mem.Allocator) !MapData {
+        // Open the file
+        const file = try std.fs.cwd().openFile(map_path, .{});
+        defer file.close();
+
+        // Get file size
+        const file_size = try file.getEndPos();
+
+        // Allocate buffer for file contents
+        const buffer = try allocator.alloc(u8, file_size);
+        defer allocator.free(buffer);
+
+        // Read file into buffer
+        const bytes_read = try file.readAll(buffer);
+        if (bytes_read != file_size) {
+            return error.IncompleteRead;
+        }
+
+        // Parse JSON into EditorData
+        return MapData.fromJson(buffer, allocator);
+    }
+
+    pub fn toJson(self: *MapData) ![]u8 {
         var arena = std.heap.ArenaAllocator.init(self.allocator);
         defer arena.deinit();
 
@@ -46,8 +85,8 @@ pub const EditorData = struct {
         return string.toOwnedSlice();
     }
 
-    pub fn fromJson(json_str: []u8, allocator: std.mem.Allocator) !EditorData {
-        var data = EditorData.init(allocator);
+    pub fn fromJson(json_str: []u8, allocator: std.mem.Allocator) !MapData {
+        var data = MapData.init(allocator);
         errdefer data.deinit();
 
         var parsed = try std.json.parseFromSlice(std.json.Value, allocator, json_str, .{});
@@ -66,7 +105,7 @@ pub const EditorData = struct {
         return data;
     }
 
-    pub fn deinit(self: *EditorData) void {
+    pub fn deinit(self: *MapData) void {
         for (self.tiles.items) |*tile| {
             tile.deinit();
         }
@@ -236,7 +275,7 @@ pub const ObjectType = enum {
 };
 
 test "serialize" {
-    var editor_data = EditorData.init(std.testing.allocator);
+    var editor_data = MapData.init(std.testing.allocator);
     defer editor_data.deinit();
 
     editor_data.addTile("tile1");
@@ -263,7 +302,7 @@ test "deserialize" {
     ;
 
     // Parse the JSON string into EditorData
-    var editor_data = try EditorData.fromJson(@constCast(json_string), std.testing.allocator);
+    var editor_data = try MapData.fromJson(@constCast(json_string), std.testing.allocator);
     defer editor_data.deinit();
 
     // Verify the parsed data
